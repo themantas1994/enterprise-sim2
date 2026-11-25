@@ -263,10 +263,12 @@ ship any text or images from the books or shows.
 ## Appendix A: 1701-D reference values (TNG Technical Manual)
 
 Paraphrased facts, section numbers in brackets. Use these as the `source:` values in `ships/1701d.json`.
+The verified values live in `docs/sources.md`; where this appendix and the ledger differ, the ledger wins
+(Phase 1 checks found a few small differences, for example the phaser segment output is 5.1 MW).
 
 **Design targets** [1.1, 5.1]: normal cruise Warp 6 until fuel runs out; maximum cruise Warp 9.2;
 Warp 9.6 for up to 12 hours. Ship mass about 4.96 million tonnes. Defensive shielding rated above
-7.3 x 10^5 kW dissipation. Phaser emitter segments 5.01 MW each.
+7.3 x 10^5 kW dissipation. Phaser emitter segments 5.1 MW each.
 
 **Warp core** [5.2]
 - Matter injector: 6 cross-fed injector sets; slush deuterium preburned to about 10^6 K; a failed
@@ -325,7 +327,7 @@ Warp 8 (675,000 MW surge); above about 55% output some sensors go blind.
 **Tractor beam** [7.5]: main emitters built on two 16 MW sources, each with two 450 millicochrane
 amplifiers.
 
-**Phasers** [11.1]: emitter segments 5.01 MW; fed from EPS primary trunks through an EPS submaster
+**Phasers** [11.1]: emitter segments 5.1 MW; fed from EPS primary trunks through an EPS submaster
 flow regulator (iris response 0.01 s, magnetic gate 0.0003 s).
 
 **Photon torpedoes** [11.3]: maximum effective range about 3,500,000 km; launchers forward and aft
