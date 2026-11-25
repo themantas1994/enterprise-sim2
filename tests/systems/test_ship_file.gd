@@ -113,3 +113,34 @@ func test_ledger_ids_cited_in_the_ship_file_exist_in_the_ledger() -> void:
 	assert_int(seen.size()).is_greater(50)
 	for id: String in seen:
 		assert_bool(ledger.contains("| %s |" % id)).override_failure_message("not in the ledger: " + id).is_true()
+
+
+func _ledger_status() -> Dictionary:
+	var out := {}
+	for line in FileAccess.get_file_as_string("res://docs/sources.md").split("\n"):
+		if not line.begins_with("| D-"):
+			continue
+		var cells := line.split("|")
+		out[cells[1].strip_edges()] = cells[cells.size() - 2].strip_edges()
+	return out
+
+
+func test_every_non_estimate_source_is_a_verified_ledger_row_and_estimates_use_the_word() -> void:
+	var status := _ledger_status()
+	assert_int(status.size()).is_greater(100)
+	for w: Dictionary in ShipData.wrappers(ShipData.read_file(H.SHIP)):
+		var src := str(w["source"])
+		if src == "estimate":
+			continue
+		for id in src.split(","):
+			var key := id.strip_edges()
+			assert_bool(status.has(key)).override_failure_message("%s: %s not in the ledger" % [w["path"], key]).is_true()
+			assert_str(str(status.get(key, ""))).override_failure_message("%s cites %s which is %s, not verified" % [w["path"], key, status.get(key, "")]).is_equal("verified")
+
+
+func test_breach_countdown_is_an_estimate_citing_d_core_005() -> void:
+	var raw := ShipData.read_file(H.SHIP)
+	var def: Dictionary = H.producer_def(raw, "warp_core")
+	assert_str(str(def["breach_ticks"]["source"])).is_equal("estimate")
+	assert_str(str(def["breach_ticks"]["reason"])).contains("D-CORE-005")
+	assert_str(str(def["critical_integrity"]["source"])).is_equal("estimate")

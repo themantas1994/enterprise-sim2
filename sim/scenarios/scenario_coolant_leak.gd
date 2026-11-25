@@ -35,9 +35,9 @@ func update(runtime: Variant) -> void:
 		lose("core ejected: the ship lost its warp core and the leak was not solved")
 		return
 	var loop: Dictionary = runtime.comp("coolant_core")
-	var recover: float = float(runtime.def("warp_core").get("overload_temp", 100.0)) * 0.9
+	var cool: float = float(runtime.tune("coolant_leak", "cool_temp"))
 	var good: bool = loop["integrity"] >= 100.0 and runtime.coolant.level["coolant_core"] >= float(runtime.tune("coolant_leak", "win_level")) \
-		and core["state"] == "online" and core["temp"] <= recover
+		and core["state"] == "online" and core["temp"] <= cool
 	_stable = _stable + 1 if good else 0
 	if _stable >= int(runtime.tune("coolant_leak", "hold_ticks")):
 		win("leak repaired, loop refilled and the core is cool and stable")

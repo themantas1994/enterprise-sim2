@@ -65,10 +65,13 @@ func test_rotating_too_slowly_is_not_enough() -> void:
 
 
 func test_power_is_drained_while_the_shields_are_down_and_the_backup_sources_are_out_of_reach() -> void:
+	H.run(_rt, 20)
+	var before: float = H.comp(_rt, "warp_core")["power"]
+	assert_float(before).is_greater(3000.0)
 	H.run_until(_rt, func() -> bool: return _rt.shields.strength < 0.1, 800)
-	H.run(_rt, 150)
+	H.run(_rt, 400)
 	var s: Dictionary = _rt.snapshot()
-	assert_float(s["components"]["warp_core"]["power"]).is_less(3000.0)
+	assert_float(s["components"]["warp_core"]["power"]).is_less(before * 0.5)
 	# bringing the saucer reactors online (reroute) puts supply beyond the cube's reach
 	_rt.send({"type": "reactor_online", "target": "impulse_saucer_1"})
 	_rt.send({"type": "reactor_online", "target": "impulse_saucer_2"})

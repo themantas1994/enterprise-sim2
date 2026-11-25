@@ -6,7 +6,7 @@ extends FrameBox
 
 func _init() -> void:
 	super._init()
-	var bar := UiScale.dp(30.0)
+	var bar := UiScale.dp(26.0)
 	add_theme_constant_override("margin_top", int(bar + UiScale.dp(6.0)))
 	add_theme_constant_override("margin_left", int(bar + UiScale.dp(8.0)))
 	add_theme_constant_override("margin_right", int(UiScale.dp(4.0)))
@@ -14,7 +14,7 @@ func _init() -> void:
 
 
 func _draw() -> void:
-	var bar := UiScale.dp(30.0)
+	var bar := UiScale.dp(26.0)
 	var color: Color = TngTokens.FRAME_COLORS[accent % TngTokens.FRAME_COLORS.size()]
 	var outer := StyleBoxFlat.new()
 	outer.bg_color = color
@@ -32,5 +32,5 @@ func _draw() -> void:
 	inner.corner_radius_top_left = int(bar * 0.8)
 	draw_style_box(inner, Rect2(Vector2(bar, bar), Vector2(bar, bar)))
 	var font := get_theme_font("font", "Label")
-	var fs := int(bar * 0.7)
-	draw_string(font, Vector2(bar * 2.2, bar * 0.5 + fs * 0.35), title, HORIZONTAL_ALIGNMENT_LEFT, maxf(0.0, size.x - bar * 3.0), fs, TngTokens.BLACK)
+	var fs := maxi(TngTokens.min_font(), int(bar * 0.7))
+	draw_string(font, Vector2(bar * 2.2, bar * 0.5 + fs * 0.35), TngTokens.fit(font, title, fs, maxf(0.0, size.x - bar * 3.0)), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, TngTokens.BLACK)

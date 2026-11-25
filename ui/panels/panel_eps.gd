@@ -2,8 +2,26 @@ extends PanelBase
 ## Panel `eps`. Reads only the ids in its map entry; layout hints below match parts of id names.
 
 
+var _loop := ""
 var _supply: Readout
 var _demand: Readout
+
+
+func _build_controls() -> void:
+	_loop = id_with("coolant")
+	if _loop == "":
+		return
+	var loop := _loop
+	add_button("isolate", "ISOLATE LOOP", func() -> void: send_ctl("isolate", {"type": "coolant_isolate", "target": loop, "value": not ship("coolant").get(loop, {}).get("isolated", false)}))
+	add_button("refill", "REFILL LOOP", func() -> void: send_ctl("refill", {"type": "coolant_refill", "target": loop, "value": not ship("coolant").get(loop, {}).get("refilling", false)}))
+
+
+func _update_controls(_snap_data: Dictionary) -> void:
+	if _loop == "":
+		return
+	var cl: Dictionary = ship("coolant").get(_loop, {})
+	set_button("isolate", "ISOLATE LOOP", "ON" if cl.get("isolated", false) else "OFF", UiStatus.CAUTION if cl.get("isolated", false) else UiStatus.OK)
+	set_button("refill", "REFILL LOOP", "ON" if cl.get("refilling", false) else "OFF", UiStatus.INFO if cl.get("refilling", false) else UiStatus.OK)
 
 
 func _build_extra(c: VBoxContainer) -> void:

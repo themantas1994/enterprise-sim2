@@ -1,5 +1,7 @@
 extends PanelBase
-## Panel `fuel`. Reads only the ids in its map entry; layout hints below match parts of id names.
+## Fuel panel: antimatter generator switch, pods and tanks. Reads the ids of its map entry and `ship.fuel`.
+
+var _pods: BarGauge
 
 
 func _group_defs() -> Array:
@@ -9,7 +11,9 @@ func _group_defs() -> Array:
 		["GENERATOR", ["antimatter_generator"]],
 	]
 
-var _pods: BarGauge
+
+func _build_controls() -> void:
+	add_button("generator", "GENERATOR", func() -> void: send_ctl("generator", {"type": "antimatter_generator_set", "value": not ship("fuel").get("generator_on", false)}))
 
 
 func _build_extra(c: VBoxContainer) -> void:
@@ -17,7 +21,12 @@ func _build_extra(c: VBoxContainer) -> void:
 	c.add_child(_pods)
 
 
-func _update_extra(snap: Dictionary) -> void:
+func _update_controls(_snap_data: Dictionary) -> void:
+	var on: bool = ship("fuel").get("generator_on", false)
+	set_button("generator", "GENERATOR", "ON" if on else "OFF", UiStatus.OK if on else UiStatus.OFF)
+
+
+func _update_extra(_snap_data: Dictionary) -> void:
 	var total := 0
 	var good := 0
 	for id in ids:

@@ -14,5 +14,14 @@ func _draw() -> void:
 	var label_w := size.x * 0.45
 	if compact:
 		label_w = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + UiScale.dp(8.0)
-	draw_string(font, Vector2(x, ty), label, HORIZONTAL_ALIGNMENT_LEFT, label_w, fs, TngTokens.PEACH)
-	draw_string(font, Vector2(x + label_w, ty), value_text, HORIZONTAL_ALIGNMENT_LEFT if compact else HORIZONTAL_ALIGNMENT_RIGHT, maxf(0.0, size.x - x - label_w), fs, TngTokens.TEXT)
+	var value_w := maxf(0.0, size.x - x - label_w)
+	if not compact:
+		# Keep the value readable: the label gives way when the value needs the room.
+		var need := font.get_string_size(value_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + UiScale.dp(6.0)
+		if need > value_w:
+			label_w = maxf(size.x * 0.25, size.x - x - need)
+			value_w = maxf(0.0, size.x - x - label_w)
+	draw_string(font, Vector2(x, ty), TngTokens.fit(font, label, fs, label_w - UiScale.dp(4.0)), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, TngTokens.PEACH)
+	var shown := TngTokens.fit(font, value_text, fs, value_w)
+	var tw := font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	draw_string(font, Vector2(x + label_w + (0.0 if compact else maxf(0.0, value_w - tw)), ty), shown, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, TngTokens.TEXT)

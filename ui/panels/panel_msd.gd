@@ -10,17 +10,18 @@ func _collapse_numbered() -> bool:
 	return true
 
 
+func _build_controls() -> void:
+	for spec in [["GREEN", "green", UiStatus.OK], ["YELLOW", "yellow", UiStatus.CAUTION], ["RED", "red", UiStatus.ALARM]]:
+		add_cmd_button("alert_" + spec[1], spec[0] + " ALERT", {"type": "set_alert", "value": spec[1]}, spec[2])
+
+
+func _update_controls(snap: Dictionary) -> void:
+	var current := str(snap.get("ship", {}).get("alert", snap.get("alert", "")))
+	for spec in [["GREEN", "green", UiStatus.OK], ["YELLOW", "yellow", UiStatus.CAUTION], ["RED", "red", UiStatus.ALARM]]:
+		set_button("alert_" + spec[1], spec[0] + " ALERT", "ACTIVE" if current == spec[1] else "", spec[2])
+
+
 func _build_extra(c: VBoxContainer) -> void:
-	var row := HBoxContainer.new()
-	c.add_child(row)
-	for spec in [["GREEN", "green"], ["YELLOW", "yellow"], ["RED", "red"]]:
-		var b := kit.button()
-		b.set_caption(spec[0] + " ALERT")
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		b.set_level(UiStatus.ALARM if spec[1] == "red" else (UiStatus.CAUTION if spec[1] == "yellow" else UiStatus.OK))
-		var value: String = spec[1]
-		b.pressed.connect(func() -> void: _send({"type": "set_alert", "value": value}))
-		row.add_child(b)
 	c.add_child(kit.caption("Situation monitor"))
 	_ok = kit.caption("All systems nominal")
 	c.add_child(_ok)

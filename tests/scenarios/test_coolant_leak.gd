@@ -46,6 +46,7 @@ func test_win_by_cutting_load_repairing_and_refilling() -> void:
 func test_win_by_isolating_the_loop_at_low_power() -> void:
 	H.run(_rt, 2)
 	_rt.send({"type": "set_alert", "value": "green"})
+	H.run(_rt, 3)  # the alert profile sets the core first, then the player lowers it
 	_rt.send({"type": "set_output", "target": "warp_core", "value": 600})
 	_rt.send({"type": "coolant_isolate", "target": "coolant_core", "value": true})
 	_rt.send({"type": "assign_team", "team": "dc_team_1", "target": "coolant_core"})
@@ -84,7 +85,7 @@ func test_overload_comes_before_containment_failure_and_a_late_fix_is_too_late()
 			break
 	assert_array(seen).is_equal(["online", "overload", "containment_failing"])
 	# once containment is failing a repair cannot stop the countdown
-	_rt.send({"type": "repair", "target": "coolant_core"})
+	_rt.send_debug({"type": "repair", "target": "coolant_core"})
 	_rt.send({"type": "coolant_refill", "target": "coolant_core", "value": true})
 	H.run_until(_rt, func() -> bool: return _sc()["status"] != "running", 1500)
 	assert_str(_sc()["status"]).is_equal("lost")
@@ -98,3 +99,32 @@ func test_same_seed_same_run() -> void:
 	assert_str(H.fingerprint(_rt)).is_equal(H.fingerprint(other))
 	assert_array(_rt.missing_tunes).is_empty()
 	other.dispose()
+
+
+func test_win_at_red_alert_by_keeping_the_loop_topped_up_while_the_team_repairs() -> void:
+	H.run(_rt, 2)
+	assert_bool(H.accepted(_rt, {"type": "coolant_refill", "target": "coolant_core", "value": true})).is_true()
+	assert_bool(H.accepted(_rt, {"type": "assign_team", "team": "dc_team_1", "target": "coolant_core"})).is_true()
+	var peak := 0.0
+	for i in 800:
+		_rt.step()
+		peak = maxf(peak, H.comp(_rt, "warp_core")["load"])
+		if _sc()["status"] != "running":
+			break
+	assert_float(peak).is_greater(0.85)  # the core stayed at its high red alert load all the time
+	assert_str(_sc()["status"]).is_equal("won")
+	assert_str(_rt.snapshot()["ship"]["alert"]).is_equal("red")
+	assert_float(H.comp(_rt, "warp_core")["temp"]).is_less(float(_rt.tune("coolant_leak", "cool_temp")) + 0.001)
+
+
+func test_lose_on_timeout_when_the_leak_is_isolated_but_never_repaired() -> void:
+	H.run(_rt, 2)
+	_rt.send({"type": "set_alert", "value": "green"})
+	H.run(_rt, 3)
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 0})  # impulse carries the ship, the core makes no heat
+	_rt.send({"type": "coolant_isolate", "target": "coolant_core", "value": true})
+	var n := H.run_until(_rt, func() -> bool: return _sc()["status"] != "running", 4200)
+	assert_str(_sc()["status"]).is_equal("lost")
+	assert_str(_sc()["reason"]).contains("time ran out")
+	assert_int(n).is_between(3990, 4010)
+	assert_str(H.comp(_rt, "warp_core")["state"]).is_equal("online")

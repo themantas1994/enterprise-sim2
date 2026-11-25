@@ -36,6 +36,11 @@ func id_detail() -> Dictionary:
 	return {}
 
 
+## True for a finite int or float (rejects NaN, inf and non-numbers).
+static func finite(v: Variant) -> bool:
+	return (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT) and not is_nan(float(v)) and not is_inf(float(v))
+
+
 static func ok() -> Dictionary:
 	return {"accepted": true}
 

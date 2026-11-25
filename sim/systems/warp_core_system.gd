@@ -13,11 +13,12 @@ extends ShipSystem
 ## reactor_shutdown aborts a running start-up. After a shutdown the chamber cools in about 10 minutes (D-SAFE-001).
 ## Other commands: core_set_ratio {value}, core_auto_ratio {value bool}, core_align, core_set_mode {value
 ## power|warp}, injector_set {target, value bool}, containment_field {value bool}; set_output sets the setpoint.
-## Output cap = max_output x injectors x constrictors x ratio x alignment x fuel; a lost matter injector is
+## Applied output = setpoint x injectors x constrictors x ratio x alignment x fuel (cap_frac); a lost matter injector is
 ## covered by dilating the rest (D-WARP-003).
 ## Containment (D-CORE-002): field strength 40% at the critical integrity falling to 15% at breach. A fault
 ## (start_containment_fault) drains core integrity each tick until the core is shut down, ejected or breached.
-## reactor_eject needs the ejection system powered (D-CORE-003). The forcefield (D-ENG-007) contains a breach when
+## Core ejection is manual only (a deliberate simplification of D-SAFE-003, D-SAFE-004 and D-SAFE-005; the automatic
+## part applies to the pod assembly in practice, see FuelSystem). reactor_eject needs the ejection system powered (D-CORE-003). The forcefield (D-ENG-007) contains a breach when
 ## at strength >= ff_hold at the moment of breach (breach_state contained), else the ship is destroyed.
 
 const CORE := "warp_core"
@@ -162,7 +163,7 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 			return {"accepted": true, "queued": true}
 		"core_set_ratio":
 			var v: Variant = cmd.get("value", null)
-			if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or float(v) < 1.0 or float(v) > 100.0:
+			if not finite(v) or float(v) < 1.0 or float(v) > 100.0:
 				return no("ratio must be a number within 1..100")
 			ratio_auto = false
 			ratio = float(v)

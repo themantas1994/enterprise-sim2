@@ -1,5 +1,5 @@
 class_name StatusStrip
-extends HBoxContainer
+extends HFlowContainer
 ## Scenario status readout: title, status (running, won, lost), time left and, when `show_reason` is set, the
 ## reason. Reads only the `ship.scenario` entry of the snapshot.
 

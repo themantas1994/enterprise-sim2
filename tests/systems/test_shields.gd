@@ -20,7 +20,8 @@ func test_cruise_runs_three_generators_at_five_percent_and_red_seven_at_85() -> 
 	_rt = H.make()
 	H.run(_rt, 20)
 	assert_int(_sh()["active_generators"].size()).is_equal(3)  # D-SHLD-011
-	assert_float(H.comp(_rt, "shield_grid")["demand"]).is_equal_approx(3.0 * 384.0 * 0.05, 0.01)  # D-SHLD-012
+	assert_float(H.comp(_rt, "shield_grid")["demand"]).is_equal_approx(3.0 * 384.0, 0.01)  # nominal cruise graviton load 1,152 MW (D-SHLD-011)
+	assert_float(_sh()["strength"]).is_between(0.04, 0.08)  # displayed level about 5% (D-SHLD-012)
 	_rt.send({"type": "set_alert", "value": "red"})
 	H.run(_rt, 20)
 	assert_int(_sh()["active_generators"].size()).is_equal(7)  # D-SHLD-014
@@ -34,21 +35,21 @@ func test_lost_generators_are_covered_by_backups_at_65_percent() -> void:
 	_rt = H.make()
 	_rt.send({"type": "set_alert", "value": "red"})
 	H.run(_rt, 10)
-	_rt.send({"type": "damage", "target": "shield_gen_p1", "amount": 100})
-	_rt.send({"type": "damage", "target": "shield_gen_p2", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "shield_gen_p1", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "shield_gen_p2", "amount": 100})
 	H.run(_rt, 10)
 	# the next intact generators take over from the 12; the backups only cover what is left over
 	assert_int(_sh()["active_generators"].size()).is_equal(7)
 	assert_int(_sh()["backup_units_used"]).is_equal(0)
 	for id in ["shield_gen_p3", "shield_gen_p4", "shield_gen_p5", "shield_gen_s1", "shield_gen_s2", "shield_gen_s3", "shield_gen_np1", "shield_gen_np2", "shield_gen_ns1", "shield_gen_ns2"]:
-		_rt.send({"type": "damage", "target": id, "amount": 100})
+		_rt.send_debug({"type": "damage", "target": id, "amount": 100})
 	H.run(_rt, 10)
 	assert_int(_sh()["active_generators"].size()).is_equal(0)
 	assert_int(_sh()["backup_units_used"]).is_equal(7)
 	assert_float(H.comp(_rt, "shield_grid")["demand"]).is_equal_approx(7.0 * 0.65 * 384.0 * 0.85, 0.01)
 	assert_float(_sh()["capacity"]).is_equal_approx(0.65, 0.001)
-	_rt.send({"type": "damage", "target": "shield_backup_primary", "amount": 100})
-	_rt.send({"type": "damage", "target": "shield_backup_secondary", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "shield_backup_primary", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "shield_backup_secondary", "amount": 100})
 	H.run(_rt, 400)
 	assert_float(_sh()["strength"]).is_less(0.01)
 
