@@ -242,7 +242,8 @@ Each phase ends with its acceptance checks passing in CI.
 
 - GdUnit4 command-line runner under `godot --headless` for the sim core (exact command in the CI workflow; exit status
   kept in CI).
-- `godot --headless --export-release "<preset>"` for each platform in CI.
+- `godot --headless --export-debug "<preset>"` for each platform in CI (debug builds in Phase 1;
+  `--export-release` is used once release signing exists).
 - Android smoke test: install the APK on an emulator, start it, check logcat for errors, take a
   screenshot of each panel.
 - Data check: a script that fails if a ship value lacks a `source` field.
