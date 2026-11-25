@@ -7,7 +7,7 @@ extends ShipSystem
 ## a drained core loop overheats the core (D-COOL-001) and a core that cannot be shut down heads for breach
 ## (D-COOL-002, D-CORE-001) through the generic reactor state machine.
 ## Commands: coolant_isolate {target, value bool} (stops the leak and the flow of that loop),
-## coolant_refill {target, value bool} (moves reserve into the loop). Repairing the store ends a leak.
+## coolant_refill {target, value bool} (keeps topping the loop up from the reserve until switched off or empty). Repairing the store ends a leak.
 
 const LOOPS := ["coolant_core", "coolant_eps"]
 const EPS_CONDUITS := [
@@ -69,7 +69,7 @@ func update(snap: Dictionary) -> void:
 			var amt := minf(minf(float(rt.tune("coolant", "refill_rate")), reserve), 100.0 - level[id])
 			level[id] += amt
 			reserve -= amt
-			if level[id] >= 100.0 or reserve <= 0.0:
+			if reserve <= 0.0:
 				refilling[id] = false
 		if before > 25.0 and level[id] <= 25.0:
 			rt.event("coolant_low", {"loop": id})

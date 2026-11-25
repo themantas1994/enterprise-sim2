@@ -90,7 +90,7 @@ func _drive(rt: ShipRuntime) -> void:
 		if t == 60:
 			rt.send({"type": "shield_set", "frequency": 123, "modulation": 456})
 		if t == 120:
-			rt.send({"type": "damage", "target": "sif_gen_p1", "amount": 100})
+			rt.send_debug({"type": "damage", "target": "sif_gen_p1", "amount": 100})
 		if t == 130:
 			rt.send({"type": "assign_team", "team": "dc_team_1", "target": "sif_gen_p1"})
 		rt.step()

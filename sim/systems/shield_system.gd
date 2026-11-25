@@ -1,9 +1,14 @@
 class_name ShieldSystem
 extends ShipSystem
 ## Deflector shields (D-SHLD-001..021, D-BORG-001..003). One grid consumer (shield_grid) draws the power of the
-## active generators; backups (4 units each, 65%) cover lost generators. Cruise 5% of rated output (D-SHLD-012),
-## alert at least 85% with up to 7 generators in phase lock (D-SHLD-013, D-SHLD-014); three generators at cruise
-## (derived from the 1,152 MW cruise load, D-SHLD-011). Four facings (fore, aft, port, stbd) hold a level 0..1;
+## active generators; backups (4 units each, 65%) cover lost generators.
+## Reading of the ledger used here: the cruise graviton load is the ledger's nominal 1,152 MW (D-SHLD-011), which is
+## three generators at their full 384 MW rating; the shield LEVEL shown to the player stays at about 5% (D-SHLD-012,
+## the radiation-standard bands), so cruise draw is 3 x 384 MW while the displayed level is 0.05. Generators at
+## alert (yellow and red) run at a level of at least 85% (D-SHLD-013), up to 7 in phase lock (D-SHLD-014). Level
+## normalisation uses the fixed 0.85 reference. The backup service time (D-SHLD-009) is not modelled. The Borg
+## adaptation is a gameplay mapping of the phaser adaptation of D-BORG-001/002 onto shield frequency, and the drain
+## depends on how well the cube matches the shield setting (the reverse of D-SHLD-019 on purpose). Four facings (fore, aft, port, stbd) hold a level 0..1;
 ## the weights decide how the grid's capacity and regeneration are shared. Shields cost warp coupling (up to 32%
 ## at maximum output, D-SHLD-020), applied in the propulsion system.
 ## Frequency and modulation (0..999) are player controls (D-SHLD-018). A Borg attack (start_borg) drains every
@@ -11,7 +16,7 @@ extends ShipSystem
 ## shield's (D-SHLD-019 reversed for the attacker, D-BORG-001, D-BORG-002, D-BORG-003). The Borg move a fixed step
 ## towards the shield setting after each shot, so a changed setting buys a few shots.
 ## Commands: shield_set {frequency?, modulation?}, shield_set_weights {fore, aft, port, stbd},
-## shield_set_level {value 0.05..1} (the level used in red alert).
+## shield_set_level {value 0.85..1} (the level used at yellow and red alert; below 85% is rejected).
 
 const FACINGS := ["fore", "aft", "port", "stbd"]
 const GENS := [
@@ -73,7 +78,7 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 			var f: Variant = cmd.get("frequency", frequency)
 			var m: Variant = cmd.get("modulation", modulation)
 			for v: Variant in [f, m]:
-				if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or float(v) < 0.0 or float(v) > hi or float(v) != floorf(float(v)):
+				if not finite(v) or float(v) < 0.0 or float(v) > hi or float(v) != floorf(float(v)):
 					return no("frequency and modulation must be integers within 0..%d" % hi)
 			frequency = int(f)
 			modulation = int(m)
@@ -83,7 +88,7 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 			var w := {}
 			for k: String in FACINGS:
 				var v: Variant = cmd.get(k, null)
-				if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or float(v) < 0.0 or float(v) > 1.0e6:
+				if not finite(v) or float(v) < 0.0 or float(v) > 1.0e6:
 					return no("weights need a number >= 0 for each of fore, aft, port, stbd")
 				w[k] = float(v)
 				total += float(v)
@@ -94,8 +99,9 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 			return ok()
 		"shield_set_level":
 			var lv: Variant = cmd.get("value", null)
-			if typeof(lv) != TYPE_INT and typeof(lv) != TYPE_FLOAT or float(lv) < float(rt.tune("shields", "cruise_level")) or float(lv) > 1.0:
-				return no("level must be within the cruise level..1")
+			var lo := float(rt.tune("shields", "alert_level"))
+			if not finite(lv) or float(lv) < lo or float(lv) > 1.0:
+				return no("level must be within %s..1 (D-SHLD-013: at least 85%% at alert)" % str(lo))
 			alert_level = float(lv)
 			return ok()
 	return null
@@ -109,10 +115,13 @@ func match_of() -> float:
 func update(_snap: Dictionary) -> void:
 	var mode: String = rt.modes.mode
 	var n: int = int(rt.tune("shields", "cruise_gens"))
-	var lvl := float(rt.tune("shields", "cruise_level"))
+	var lvl := float(rt.tune("shields", "cruise_level"))  # displayed level
+	var draw := 1.0  # share of rated power drawn: nominal cruise graviton load (D-SHLD-011)
+	if mode == "yellow_alert" or mode == "red_alert":
+		lvl = maxf(alert_level, float(rt.tune("shields", "alert_level")))
+		draw = lvl
 	if mode == "red_alert":
 		n = int(rt.tune("shields", "max_gens"))
-		lvl = alert_level
 	elif mode == "reduced_power":
 		n = int(rt.tune("shields", "reduced_gens"))
 	var avail: Array = []
@@ -128,7 +137,7 @@ func update(_snap: Dictionary) -> void:
 	backups_used = mini(shortfall, units)
 	var eff_gens := float(active.size()) + float(backups_used) * float(rt.tune("shields", "backup_fraction"))
 	var gen_mw := float(rt.tune("shields", "gen_mw"))
-	var demand := eff_gens * gen_mw * lvl
+	var demand := eff_gens * gen_mw * draw
 	if mode == "yellow_alert":
 		for id: String in SECONDARY_STANDBY:
 			if rt.alive(id):

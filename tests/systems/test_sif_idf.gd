@@ -13,7 +13,7 @@ func after_test() -> void:
 
 
 func _kill(id: String) -> void:
-	_rt.send({"type": "damage", "target": id, "amount": 100})
+	_rt.send_debug({"type": "damage", "target": id, "amount": 100})
 
 
 func _go_to_warp(w: float) -> void:
