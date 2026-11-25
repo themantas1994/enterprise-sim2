@@ -6,7 +6,7 @@ extends RefCounted
 ## ascending (priority, array order); when supply is short the highest numbers are shed first and the
 ## consumer at the boundary receives partial service.
 ## Method (greedy, deterministic):
-##   1. Producers offer their capacity (max_output * efficiency; reactors only while online or overload).
+##   1. Producers offer their capacity (output setting * efficiency; reactors only while online or overload).
 ##      Stores offer min(max_discharge * efficiency, charge / dt) but only as a second tier.
 ##   2. Each consumer, in priority order, repeatedly takes the nearest (fewest conduits, ties by conduit
 ##      array order) source with supply left over a path of conduits that still have capacity, first from
@@ -18,6 +18,7 @@ extends RefCounted
 ##   3. Stores that did not discharge then charge from leftover producer supply, up to max_charge and room.
 ## Per-component output: power = power drawn from a producer, signed store flow (+ discharge, - charge),
 ## power entering a conduit, power delivered to a consumer. load = power / rated (0 when rated is 0).
+## Nodes with integrity 0, and reactors in breach or ejected, never carry power (not as source, relay or sink).
 ## A consumer sets reachable = false when no usable conduit path leads to any present source node.
 
 const TOL := 1e-9
@@ -28,11 +29,18 @@ static func producer_capacity(c: Dictionary) -> float:
 		return 0.0
 	if c["reactor"] and not ReactorFsm.provides_power(c):
 		return 0.0
-	return c["max_output"] * c["efficiency"]
+	return c["output_limit"] * c["efficiency"]
 
 
 static func _conduit_usable(c: Dictionary) -> bool:
 	return not c["cut"] and c["integrity"] > 0.0 and c["capacity"] * c["efficiency"] > TOL
+
+
+static func _node_ok(comps: Dictionary, id: String) -> bool:
+	var n: Dictionary = comps[id]
+	if n["integrity"] <= 0.0:
+		return false
+	return not (n["kind"] == "producer" and n["reactor"] and not ReactorFsm.present(n))
 
 
 static func solve(comps: Dictionary, order: Array, dt: float) -> void:
@@ -44,6 +52,7 @@ static func solve(comps: Dictionary, order: Array, dt: float) -> void:
 	var adj: Dictionary = {}  # node id -> conduit ids (array order)
 	var store_ids: Array = []
 	var consumer_keys: Array = []
+	var conduit_ids: Array = []
 	var present: Dictionary = {}  # source node ids that physically exist
 	for id: String in order:
 		var c: Dictionary = comps[id]
@@ -67,14 +76,20 @@ static func solve(comps: Dictionary, order: Array, dt: float) -> void:
 						stores[id] = d
 			"conduit":
 				flow_in[id] = 0.0
-				if _conduit_usable(c):
-					rem_cap[id] = c["capacity"] * c["efficiency"]
-					for end: String in ["from", "to"]:
-						if not adj.has(c[end]):
-							adj[c[end]] = []
-						adj[c[end]].append(id)
+				conduit_ids.append(id)
 			"consumer":
 				consumer_keys.append([c["priority"], consumer_keys.size(), id])
+	# A node whose integrity is 0, or a reactor in breach or ejected, is not part of any path: it cannot be a
+	# source, a relay or a sink, so conduits touching it carry nothing.
+	for id: String in conduit_ids:
+		var c: Dictionary = comps[id]
+		if not _conduit_usable(c) or not _node_ok(comps, c["from"]) or not _node_ok(comps, c["to"]):
+			continue
+		rem_cap[id] = c["capacity"] * c["efficiency"]
+		for end: String in ["from", "to"]:
+			if not adj.has(c[end]):
+				adj[c[end]] = []
+			adj[c[end]].append(id)
 	consumer_keys.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
 	for key: Array in consumer_keys:
 		var c: Dictionary = comps[key[2]]

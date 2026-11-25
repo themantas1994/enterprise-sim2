@@ -117,3 +117,118 @@ func test_heat_over_threshold_lowers_efficiency_and_integrity() -> void:
 	s.submit({"type": "set_demand", "target": "load", "value": 0.0})
 	F.run(s, 300)
 	assert_float(s.snapshot()["components"]["src"]["temp"]).is_less(25.0)
+
+
+func test_set_priority_set_demand_set_output_reject_out_of_range_values() -> void:
+	var bad: Array = [
+		{"type": "set_priority", "target": "c_hi", "value": 1.5},
+		{"type": "set_priority", "target": "c_hi", "value": 1.0e12},
+		{"type": "set_priority", "target": "c_hi", "value": -1.0e12},
+		{"type": "set_priority", "target": "c_hi", "value": INF},
+		{"type": "set_priority", "target": "c_hi", "value": NAN},
+		{"type": "set_demand", "target": "c_hi", "value": 2.0e9},
+		{"type": "set_demand", "target": "c_hi", "value": INF},
+		{"type": "set_demand", "target": "c_hi", "value": NAN},
+		{"type": "set_output", "target": "src", "value": INF},
+		{"type": "set_output", "target": "src", "value": NAN},
+		{"type": "set_output", "target": "src", "value": 1.0e12},
+	]
+	for c in bad:
+		var s := Sim.new(F.star_grid(), 1)
+		s.submit(c)
+		s.step()
+		assert_int(F.events_of(s.snapshot()["events"], "rejected").size()).is_equal(1)
+		var comps: Dictionary = s.snapshot()["components"]
+		assert_int(comps["c_hi"]["priority"]).is_equal(1)
+		assert_float(comps["c_hi"]["demand"]).is_equal_approx(40.0, 0.001)
+		assert_float(comps["src"]["power"]).is_equal_approx(100.0, 0.001)
+	var ok := Sim.new(F.star_grid(), 1)
+	ok.submit({"type": "set_priority", "target": "c_hi", "value": 5.0})
+	ok.step()
+	assert_int(F.events_of(ok.snapshot()["events"], "rejected").size()).is_equal(0)
+	assert_int(ok.snapshot()["components"]["c_hi"]["priority"]).is_equal(5)
+
+
+func test_loader_rejects_wrong_types_instead_of_coercing() -> void:
+	var cases: Array = [
+		{"producers": [{"id": "r", "max_output": 10.0, "reactor": "yes"}]},
+		{"producers": [{"id": "r", "max_output": 10.0, "reactor": 1}]},
+		{"producers": [{"id": "p", "max_output": 10.0}], "consumers": [{"id": "c", "demand": 1.0}],
+			"conduits": [{"id": "k", "from": 5, "to": "c", "capacity": 1.0}]},
+		{"producers": [{"id": "p", "max_output": 10.0}], "consumers": [{"id": "c", "demand": 1.0}],
+			"conduits": [{"id": "k", "from": "p", "to": ["c"], "capacity": 1.0}]},
+		{"consumers": [{"id": "c", "demand": 1.0, "priority": 1.5}]},
+		{"producers": [{"id": "r", "max_output": 10.0, "reactor": true, "breach_ticks": 2.5}]},
+	]
+	for data in cases:
+		var s := Sim.new(data, 1)
+		assert_bool(s.valid).is_false()
+		assert_int(s.errors.size()).is_greater(0)
+	assert_bool(Sim.new({"consumers": [{"id": "c", "demand": 1.0, "priority": 2.0}]}, 1).valid).is_true()
+
+
+# ---- save validation ----
+
+func _rewrite(save: Dictionary, mutate: Callable) -> Dictionary:
+	var state: Dictionary = bytes_to_var(Marshalls.base64_to_raw(save["state"]))
+	mutate.call(state)
+	var out := save.duplicate(true)
+	out["state"] = Marshalls.raw_to_base64(var_to_bytes(state))
+	return out
+
+
+func _good_save() -> Dictionary:
+	var s := Sim.new(F.reactor_grid(50.0), 3)
+	F.run(s, 5)
+	return JSON.parse_string(JSON.stringify(s.save()))
+
+
+func test_valid_save_still_round_trips() -> void:
+	var save := _good_save()
+	var loaded: Sim = Sim.from_save(save)
+	assert_object(loaded).is_not_null()
+	assert_int(loaded.snapshot()["tick"]).is_equal(5)
+
+
+func test_from_save_returns_null_for_corrupt_or_truncated_blobs() -> void:
+	var save := _good_save()
+	for blob in ["!!!not base64!!!", "", "AAAA", save["state"].substr(0, int(save["state"].length() / 2))]:
+		var bad := save.duplicate(true)
+		bad["state"] = blob
+		assert_object(Sim.from_save(bad)).is_null()
+
+
+func test_from_save_returns_null_for_wrong_member_types_and_ranges() -> void:
+	var save := _good_save()
+	var mutations: Array = [
+		func(st: Dictionary) -> void: st["queue"] = 5,
+		func(st: Dictionary) -> void: st["queue"] = [5],
+		func(st: Dictionary) -> void: st["events"] = "x",
+		func(st: Dictionary) -> void: st["alert"] = 5,
+		func(st: Dictionary) -> void: st["mode"] = "",
+		func(st: Dictionary) -> void: st["comps"] = [],
+		func(st: Dictionary) -> void: st["comps"]["core"].erase("temp"),
+		func(st: Dictionary) -> void: st["comps"]["core"]["temp"] = "hot",
+		func(st: Dictionary) -> void: st["comps"]["core"]["temp"] = INF,
+		func(st: Dictionary) -> void: st["comps"]["core"]["integrity"] = NAN,
+		func(st: Dictionary) -> void: st["comps"]["core"]["state"] = "bogus",
+		func(st: Dictionary) -> void: st["comps"]["load"]["priority"] = 1.5,
+		func(st: Dictionary) -> void: st["comps"]["feed"]["from"] = 7,
+		func(st: Dictionary) -> void: st["comps"].erase("feed"),
+		func(st: Dictionary) -> void: st["order"].append("ghost"),
+		func(st: Dictionary) -> void: st["order"][1] = "core",
+		func(st: Dictionary) -> void: st["order"] = [],
+		func(st: Dictionary) -> void: st["valid"] = "yes",
+		func(st: Dictionary) -> void: st["ship"] = 3,
+	]
+	for m in mutations:
+		assert_object(Sim.from_save(_rewrite(save, m))).is_null()
+
+
+func test_from_save_returns_null_for_bad_header_fields() -> void:
+	for patch in [{"tick": 1.0e30}, {"tick": -5}, {"tick": 1.5}, {"tick": "7"}, {"seed": "abc"}, {"seed": 5},
+			{"rng_state": "x1"}, {"rng_state": 12}, {"version": 2}, {"state": 5}]:
+		var bad := _good_save()
+		for k in patch:
+			bad[k] = patch[k]
+		assert_object(Sim.from_save(bad)).is_null()

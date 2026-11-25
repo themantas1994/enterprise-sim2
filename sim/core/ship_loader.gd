@@ -6,6 +6,7 @@ extends RefCounted
 ##   alert: String (default "green"), mode: String (default "normal"), ambient: number (default 20)
 ##   producers: [{id, max_output, rated?, reactor?, state?, ...}]
 ##       max_output  hard maximum output (power units)            required, >= 0
+##       output      initial output setting, <= max_output        default max_output
 ##       rated       load reference; load = output / rated        default max_output
 ##       reactor     true makes it a state machine producer       default false
 ##       state       reactor start state (see ReactorFsm)         default "cold"
@@ -103,7 +104,12 @@ static func _build(kind: String, id: String, def: Dictionary, ambient: float, ct
 		"producer":
 			c["max_output"] = _num(def, "max_output", 0.0, 0.0, 1.0e9, ctx, errors, true)
 			c["rated"] = _num(def, "rated", c["max_output"], 0.0, 1.0e9, ctx, errors)
-			c["reactor"] = def.get("reactor", false) == true
+			c["output_limit"] = _num(def, "output", c["max_output"], 0.0, c["max_output"], ctx, errors)
+			var rv: Variant = def.get("reactor", false)
+			if typeof(rv) != TYPE_BOOL:
+				errors.append("%s.reactor must be a boolean" % ctx)
+				rv = false
+			c["reactor"] = rv
 			c["state"] = "online"
 			if c["reactor"]:
 				var st: Variant = def.get("state", "cold")
@@ -111,8 +117,8 @@ static func _build(kind: String, id: String, def: Dictionary, ambient: float, ct
 					errors.append("%s.state must be one of the reactor states" % ctx)
 					st = "cold"
 				c["state"] = st
-				c["startup_ticks"] = int(_num(def, "startup_ticks", 20.0, 0.0, 1.0e6, ctx, errors))
-				c["breach_ticks"] = int(_num(def, "breach_ticks", 30.0, 1.0, 1.0e6, ctx, errors))
+				c["startup_ticks"] = _int(def, "startup_ticks", 20, 0, 1000000, ctx, errors)
+				c["breach_ticks"] = _int(def, "breach_ticks", 30, 1, 1000000, ctx, errors)
 				c["overload_load"] = _num(def, "overload_load", 1.0, 0.0, 1.0e6, ctx, errors)
 				c["overload_temp"] = _num(def, "overload_temp", c["heat_threshold"], 0.0, 1.0e6, ctx, errors)
 				c["recover_temp"] = _num(def, "recover_temp", 0.9 * c["overload_temp"], 0.0, 1.0e6, ctx, errors)
@@ -132,15 +138,19 @@ static func _build(kind: String, id: String, def: Dictionary, ambient: float, ct
 			c["max_discharge"] = _num(def, "max_discharge", 0.0, 0.0, 1.0e9, ctx, errors)
 			c["rated"] = _num(def, "rated", maxf(c["max_charge"], c["max_discharge"]), 0.0, 1.0e9, ctx, errors)
 		"conduit":
-			c["from"] = str(def.get("from", ""))
-			c["to"] = str(def.get("to", ""))
+			for end: String in ["from", "to"]:
+				var ev: Variant = def.get(end, null)
+				if typeof(ev) != TYPE_STRING:
+					errors.append("%s.%s must be a string" % [ctx, end])
+					ev = ""
+				c[end] = ev
 			c["capacity"] = _num(def, "capacity", 0.0, 0.0, 1.0e9, ctx, errors, true)
 			c["loss"] = _num(def, "loss", 0.0, 0.0, 0.999, ctx, errors)
 			c["rated"] = _num(def, "rated", c["capacity"], 0.0, 1.0e9, ctx, errors)
 			c["cut"] = false
 		"consumer":
 			c["demand"] = _num(def, "demand", 0.0, 0.0, 1.0e9, ctx, errors, true)
-			c["priority"] = int(_num(def, "priority", 100.0, -1.0e6, 1.0e6, ctx, errors))
+			c["priority"] = _int(def, "priority", 100, -1000000000, 1000000000, ctx, errors)
 			c["allocation"] = _num(def, "allocation", 1.0, 0.0, 1.0, ctx, errors)
 			c["reachable"] = true
 	return c
@@ -161,3 +171,12 @@ static func _num(d: Dictionary, key: String, def: float, lo: float, hi: float, c
 		errors.append("%s.%s out of range [%s, %s]" % [ctx, key, lo, hi])
 		return def
 	return f
+
+
+## Reads an integer (JSON numbers with no fractional part are accepted); anything else is an error.
+static func _int(d: Dictionary, key: String, def: int, lo: int, hi: int, ctx: String, errors: Array[String]) -> int:
+	var f := _num(d, key, float(def), float(lo), float(hi), ctx, errors)
+	if f != floorf(f):
+		errors.append("%s.%s must be an integer" % [ctx, key])
+		return def
+	return int(f)

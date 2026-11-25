@@ -4,10 +4,10 @@ extends RefCounted
 
 
 ## One producer feeding three consumers of priority 1, 2, 3 (lower number = more important).
-## Supply 100, total demand 120.
+## Supply setting 100 (hard maximum 300), total demand 120.
 static func star_grid() -> Dictionary:
 	return {
-		"producers": [{"id": "src", "max_output": 100.0}],
+		"producers": [{"id": "src", "max_output": 300.0, "output": 100.0}],
 		"conduits": [
 			{"id": "k_hi", "from": "src", "to": "c_hi", "capacity": 100.0},
 			{"id": "k_mid", "from": "src", "to": "c_mid", "capacity": 100.0},

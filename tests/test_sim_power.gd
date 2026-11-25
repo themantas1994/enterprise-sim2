@@ -134,3 +134,57 @@ func test_store_discharges_to_cover_shortage_and_recharges_from_surplus() -> voi
 	s.step()
 	assert_float(_p(s, "bank")).is_equal_approx(-20.0, 0.001)  # charging at max rate from surplus
 	assert_float(s.snapshot()["components"]["bank"]["charge"]).is_greater(49.0)
+
+
+func test_destroyed_junction_between_source_and_consumer_passes_no_power() -> void:
+	var data := {
+		"producers": [{"id": "src", "max_output": 100.0}],
+		"junctions": [{"id": "node"}],
+		"conduits": [
+			{"id": "k1", "from": "src", "to": "node", "capacity": 500.0},
+			{"id": "k2", "from": "node", "to": "load", "capacity": 500.0},
+		],
+		"consumers": [{"id": "load", "demand": 50.0, "priority": 1}],
+	}
+	var s := Sim.new(data, 1)
+	s.step()
+	assert_float(_p(s, "load")).is_equal_approx(50.0, 0.001)
+	s.submit({"type": "damage", "target": "node", "amount": 100.0})
+	s.step()
+	assert_float(_p(s, "load")).is_equal_approx(0.0, 0.001)
+	assert_str(s.snapshot()["components"]["load"]["state"]).is_equal("unpowered")
+	s.submit({"type": "repair", "target": "node"})
+	s.step()
+	assert_float(_p(s, "load")).is_equal_approx(50.0, 0.001)
+
+
+func test_destroyed_consumer_in_the_middle_of_a_chain_passes_no_power() -> void:
+	var data := {
+		"producers": [{"id": "src", "max_output": 100.0}],
+		"conduits": [
+			{"id": "k1", "from": "src", "to": "front", "capacity": 500.0},
+			{"id": "k2", "from": "front", "to": "back", "capacity": 500.0},
+		],
+		"consumers": [
+			{"id": "front", "demand": 10.0, "priority": 1},
+			{"id": "back", "demand": 10.0, "priority": 2},
+		],
+	}
+	var s := Sim.new(data, 1)
+	s.step()
+	assert_float(_p(s, "back")).is_equal_approx(10.0, 0.001)
+	s.submit({"type": "damage", "target": "front", "amount": 100.0})
+	s.step()
+	assert_str(s.snapshot()["components"]["front"]["state"]).is_equal("destroyed")
+	assert_float(_p(s, "back")).is_equal_approx(0.0, 0.001)
+
+
+func test_set_output_cannot_exceed_the_hard_maximum() -> void:
+	var s := Sim.new(F.star_grid(), 1)  # hard maximum 300, initial setting 100
+	s.submit({"type": "set_output", "target": "src", "value": 301.0})
+	var ev: Array = F.run(s, 1)
+	assert_int(F.events_of(ev, "rejected").size()).is_equal(1)
+	assert_float(_p(s, "src")).is_equal_approx(100.0, 0.001)
+	s.submit({"type": "set_output", "target": "src", "value": 300.0})
+	F.run(s, 1)
+	assert_float(_p(s, "src")).is_equal_approx(120.0, 0.001)  # demand 120 now fully met

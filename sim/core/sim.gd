@@ -12,9 +12,9 @@ extends RefCounted
 ## {type="rejected", cmd, reason, tick}; nothing is thrown.
 ##   set_alert {value: String}              set_mode {value: String}     stored fields, no other effect yet
 ##   set_allocation {target, value 0..1}    consumer allocation scale
-##   set_demand {target, value >= 0}        consumer demand
-##   set_priority {target, value: int}      consumer priority (lower number = more important)
-##   set_output {target, value >= 0}        producer max_output (supply setting)
+##   set_demand {target, value 0..1e9}        consumer demand
+##   set_priority {target, value: int within +-1e9}   consumer priority (lower number = more important)
+##   set_output {target, value 0..max_output}   producer output setting; never above the ship's hard maximum
 ##   damage {target, amount > 0}            remove integrity from any component
 ##   repair {target}                        integrity back to 100; clears a conduit cut (rejected for a reactor
 ##                                          in breach or ejected)
@@ -34,6 +34,7 @@ extends RefCounted
 ## bit-exact after JSON.stringify and JSON.parse_string. Sim.from_save() returns null for a malformed save.
 
 const DT := 0.1
+const LIMIT := 1.0e9
 const SAVE_VERSION := 1
 const COMPONENT_FIELDS := ["kind", "state", "power", "temp", "integrity", "efficiency", "load"]
 const EXTRA_FIELDS := {
@@ -140,18 +141,23 @@ func save() -> Dictionary:
 
 ## Rebuilds a Sim from save() output (also after a JSON round trip). Returns null if the save is malformed.
 static func from_save(d: Dictionary) -> Sim:
-	if typeof(d.get("version")) not in [TYPE_INT, TYPE_FLOAT] or int(d["version"]) != SAVE_VERSION:
+	if not _is_num(d.get("version")) or float(d["version"]) != float(SAVE_VERSION):
 		return null
-	if typeof(d.get("seed")) != TYPE_STRING or typeof(d.get("rng_state")) != TYPE_STRING:
+	if not _is_int_string(d.get("seed")) or not _is_int_string(d.get("rng_state")):
 		return null
-	if typeof(d.get("tick")) not in [TYPE_INT, TYPE_FLOAT] or typeof(d.get("state")) != TYPE_STRING:
+	if not _is_num(d.get("tick")) or not is_finite(float(d["tick"])):
 		return null
-	var decoded: Variant = bytes_to_var(Marshalls.base64_to_raw(d["state"]))
-	if typeof(decoded) != TYPE_DICTIONARY:
+	var tick_f := float(d["tick"])
+	if tick_f < 0.0 or tick_f > 1.0e15 or tick_f != floorf(tick_f):
 		return null
-	for key: String in ["ship", "queue", "events", "comps", "order", "alert", "mode", "valid", "errors", "reported"]:
-		if not decoded.has(key):
-			return null
+	if typeof(d.get("state")) != TYPE_STRING:
+		return null
+	var raw := Marshalls.base64_to_raw(d["state"])
+	if raw.is_empty():
+		return null
+	var decoded: Variant = bytes_to_var(raw)
+	if typeof(decoded) != TYPE_DICTIONARY or not _state_ok(decoded):
+		return null
 	var s := Sim.new({}, String(d["seed"]).to_int())
 	s._ship = decoded["ship"]
 	s._queue.assign(decoded["queue"])
@@ -163,9 +169,76 @@ static func from_save(d: Dictionary) -> Sim:
 	s.valid = decoded["valid"]
 	s.errors.assign(decoded["errors"])
 	s._reported_errors = decoded["reported"]
-	s.tick = int(d["tick"])
+	s.tick = int(tick_f)
 	s._rng.state = String(d["rng_state"]).to_int()
 	return s
+
+
+static func _is_num(v: Variant) -> bool:
+	return typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT
+
+
+static func _is_int_string(v: Variant) -> bool:
+	return typeof(v) == TYPE_STRING and String(v).is_valid_int()
+
+
+## Checks the decoded state blob: member types, then every component against what the ship data builds.
+static func _state_ok(st: Dictionary) -> bool:
+	var types := {
+		"ship": TYPE_DICTIONARY, "queue": TYPE_ARRAY, "events": TYPE_ARRAY, "comps": TYPE_DICTIONARY,
+		"order": TYPE_ARRAY, "alert": TYPE_STRING, "mode": TYPE_STRING, "valid": TYPE_BOOL,
+		"errors": TYPE_ARRAY, "reported": TYPE_BOOL,
+	}
+	for key: String in types:
+		if typeof(st.get(key)) != types[key]:
+			return false
+	if st["alert"] == "" or st["mode"] == "":
+		return false
+	for list_key: String in ["queue", "events"]:
+		for item: Variant in st[list_key]:
+			if typeof(item) != TYPE_DICTIONARY:
+				return false
+	for e: Variant in st["errors"]:
+		if typeof(e) != TYPE_STRING:
+			return false
+	var built := ShipLoader.load_ship(st["ship"])
+	if (built["errors"].is_empty()) != st["valid"]:
+		return false
+	var comps: Dictionary = st["comps"]
+	var order: Array = st["order"]
+	if not st["valid"]:
+		return comps.is_empty() and order.is_empty()
+	if order.size() != built["order"].size() or comps.size() != order.size():
+		return false
+	for i in order.size():
+		if order[i] != built["order"][i] or not comps.has(order[i]):
+			return false
+		if not _comp_ok(comps[order[i]], built["comps"][order[i]]):
+			return false
+	return true
+
+
+static func _comp_ok(c: Variant, template: Dictionary) -> bool:
+	if typeof(c) != TYPE_DICTIONARY or c.size() != template.size():
+		return false
+	for key: String in template:
+		if not c.has(key) or typeof(c[key]) != typeof(template[key]):
+			return false
+		if typeof(c[key]) == TYPE_FLOAT and not is_finite(c[key]):
+			return false
+	if c["kind"] != template["kind"] or c["integrity"] < 0.0 or c["integrity"] > 100.0:
+		return false
+	match c["kind"]:
+		"store":
+			if c["charge"] < 0.0 or c["charge"] > c["capacity"]:
+				return false
+		"consumer":
+			if not SERVICE_EVENT.has(c["state"]) or absf(c["priority"]) > LIMIT:
+				return false
+		"producer":
+			if c["reactor"] and (not ReactorFsm.STATES.has(c["state"]) or c["countdown"] < 0 or c["startup_left"] < 0):
+				return false
+	return true
 
 
 # ---- commands ----------------------------------------------------------------------------------------------
@@ -213,16 +286,16 @@ func _cmd_set(type: String, cmd: Dictionary) -> String:
 				return "allocation must be within 0..1"
 			c["allocation"] = f
 		"set_demand":
-			if f < 0.0:
-				return "demand must be >= 0"
+			if f < 0.0 or f > LIMIT:
+				return "demand must be within 0..1e9"
 			c["demand"] = f
 		"set_output":
-			if f < 0.0:
-				return "output must be >= 0"
-			c["max_output"] = f
+			if f < 0.0 or f > c["max_output"]:
+				return "output must be within 0..max_output"
+			c["output_limit"] = f
 		"set_priority":
-			if typeof(v) != TYPE_INT and f != floorf(f):
-				return "priority must be an integer"
+			if absf(f) > LIMIT or f != floorf(f):
+				return "priority must be an integer within +-1e9"
 			c["priority"] = int(f)
 	return ""
 
