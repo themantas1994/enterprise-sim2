@@ -60,3 +60,19 @@ Spawns match the model and effort of the agent plan (Orson sonnet/high confirmed
 Dara opus/high; Kit sonnet/medium; Nora sonnet/high). One mismatch: Kit and Nora ran as the `general-purpose` agent type
 because `implementer` and `reviewer` are not available in this session. One spawn beyond the plan: Kit was resumed once
 to fix the confirmed review findings, as requested.
+
+## Phase 2: simulation core (2026-11-25)
+
+Goal: the ship-independent simulation core with tests, no UI (PLAN.md section 3, milestone 2).
+Accept: GdUnit4 tests cover power shortage shedding, conduit cut and reroute, reactor overload to breach,
+ejection, and same seed gives the same run; all CI jobs on the PR are green.
+
+Orson's session check at start: `get_session` reported model claude-sonnet-5-5, effort high.
+
+### Spawn log
+
+One line per spawned worker: agent, task, model, effort, result.
+
+| agent | task | model | effort | result |
+|---|---|---|---|---|
+| Kit (K2) | sim core in sim/core with tests first (shedding, reroute, overload to breach, ejection, determinism, save/load) | sonnet | medium | 33 test cases pass; purity, selftest and ship-source checks exit 0; no real ship values in sim/ or tests/ |
