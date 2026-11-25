@@ -9,6 +9,7 @@ extends Node
 ##   power_unit() -> String
 ##   send(cmd) -> Dictionary        the only write path for commands
 ##   scenario_ids() -> Array, start_scenario(id)
+##   load_errors                    why no runtime is running (empty when one is), has_runtime() -> bool
 ## Setup: start(ship_path, seed) builds ShipRuntime.create(...) and reads the panel map from the ship file's
 ## `panels` object, or from ships/1701d_panels.json when the ship file has none. use_runtime(rt, map) injects
 ## a runtime and a panel map (tests).
@@ -39,6 +40,20 @@ var _unit := ""
 func _ready() -> void:
 	if auto_start and _runtime == null:
 		start(SHIP_PATH, seed_value)
+
+
+func _exit_tree() -> void:
+	_dispose_runtime()
+
+
+func has_runtime() -> bool:
+	return _runtime != null
+
+
+func _dispose_runtime() -> void:
+	if _runtime != null and _runtime.has_method("dispose"):
+		_runtime.call("dispose")
+	_runtime = null
 
 
 func _process(delta: float) -> void:
@@ -73,15 +88,15 @@ func start(ship_path: String, seed_in: int) -> bool:
 	seed_value = seed_in
 	load_errors.clear()
 	if not ResourceLoader.exists(RUNTIME_SCRIPT):
-		load_errors.append("ship runtime not available")
-		push_warning("SimHost: " + load_errors[0])
-		return false
+		return _fail("ship runtime not available")
 	var script: Script = load(RUNTIME_SCRIPT)
 	var rt: Variant = script.call("create", ship_path, seed_in)
 	if rt == null:
-		load_errors.append("ship runtime could not load " + ship_path)
-		push_warning("SimHost: " + load_errors[0])
-		return false
+		return _fail("ship runtime could not load " + ship_path)
+	if not bool(rt.get("valid")):
+		var why := "; ".join(PackedStringArray((rt.get("errors") as Array).map(func(e: Variant) -> String: return str(e))))
+		rt.call("dispose")
+		return _fail("ship file missing or invalid: %s (%s)" % [ship_path, why if why != "" else "no systems data"])
 	var data := _read_json(ship_path)
 	var map: Variant = data.get("panels", null)
 	if typeof(map) != TYPE_DICTIONARY:
@@ -93,7 +108,21 @@ func start(ship_path: String, seed_in: int) -> bool:
 	return true
 
 
+func _fail(message: String) -> bool:
+	load_errors.append(message)
+	_dispose_runtime()
+	_panels = {}
+	snapshot = {}
+	prev = {}
+	snapshot_ready.emit(snapshot, prev)
+	scenario_changed.emit()
+	return false
+
+
 func use_runtime(runtime: Object, panel_map: Dictionary, unit: String = "") -> void:
+	if _runtime != null and _runtime != runtime:
+		_dispose_runtime()
+	load_errors.clear()
 	_runtime = runtime
 	_unit = unit
 	_panels = _normalise(panel_map)

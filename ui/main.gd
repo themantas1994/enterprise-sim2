@@ -39,11 +39,11 @@ func _ready() -> void:
 	strip.host = host
 	strip.kit = kit
 	strip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	strip.size_flags_stretch_ratio = 2.0
+	strip.size_flags_stretch_ratio = 2.5
 	head.add_child(strip)
 	var tab_scroll := ScrollContainer.new()
 	tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	tab_scroll.custom_minimum_size = Vector2(0, UiScale.dp(56.0))
+	tab_scroll.custom_minimum_size = Vector2(0, UiScale.dp(60.0))
 	col.add_child(tab_scroll)
 	_tabs = HBoxContainer.new()
 	tab_scroll.add_child(_tabs)

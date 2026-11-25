@@ -28,6 +28,21 @@ const FRAME_COLORS := [PEACH, LAVENDER, SALMON, TAN, PALE_BLUE]
 const FONT_PATH := "res://ui/themes/tng/fonts/Antonio-Regular.ttf"
 
 
+## Smallest text drawn anywhere: 12 dp (12 px at 1280x720, scaled on a phone).
+static func min_font() -> int:
+	return int(ceilf(UiScale.dp(12.0)))
+
+
+## `text` cut with an ellipsis so that it fits in `width` at font size `fs`.
+static func fit(font: Font, text: String, fs: int, width: float) -> String:
+	if width <= 0.0 or font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= width:
+		return text
+	var s := text
+	while s.length() > 1 and font.get_string_size(s + "...", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > width:
+		s = s.substr(0, s.length() - 1)
+	return s + "..."
+
+
 static func level_color(level: String) -> Color:
 	return LEVEL_COLOR.get(level, LAVENDER)
 

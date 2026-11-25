@@ -1,5 +1,8 @@
 extends PanelBase
-## Panel `sif_idf`. Reads only the ids in its map entry; layout hints below match parts of id names.
+## Structural integrity and inertial damping panel. Reads the ids of its map entry and `ship.sif_idf`.
+
+var _sif: BarGauge
+var _idf: BarGauge
 
 
 func _group_defs() -> Array:
@@ -11,3 +14,17 @@ func _group_defs() -> Array:
 		["IDF GENERATORS", ["idf_gen"]],
 		["IDF BACKUP", ["idf_backup"]],
 	]
+
+
+func _build_extra(c: VBoxContainer) -> void:
+	_sif = kit.gauge("SIF strength")
+	_idf = kit.gauge("IDF strength")
+	c.add_child(_sif)
+	c.add_child(_idf)
+
+
+func _update_extra(_snap_data: Dictionary) -> void:
+	var s := ship("sif_idf")
+	for pair in [[_sif, "sif_strength"], [_idf, "idf_strength"]]:
+		var v := float(s.get(pair[1], 0.0))
+		(pair[0] as BarGauge).set_reading(v, 1.0, UiStatus.OK if v >= 0.75 else (UiStatus.CAUTION if v >= 0.25 else UiStatus.ALARM), "%d%%" % int(round(v * 100.0)))

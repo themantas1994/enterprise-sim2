@@ -1,5 +1,7 @@
 extends PanelBase
-## Panel `impulse`. Reads only the ids in its map entry; layout hints below match parts of id names.
+## Impulse panel: impulse setting, reactors and fuel. Reads the ids of its map entry and `ship.propulsion`.
+
+var _thrust: BarGauge
 
 
 func _group_defs() -> Array:
@@ -10,17 +12,21 @@ func _group_defs() -> Array:
 		["FUEL", ["deuterium"]],
 	]
 
-var _thrust: BarGauge
+
+func _build_controls() -> void:
+	add_slider("impulse", "Impulse", 0.0, 1.0, 0.05, func(v: float) -> Dictionary: return {"type": "set_impulse", "value": v}, 100.0, 0, "%", _controls)
 
 
 func _build_extra(c: VBoxContainer) -> void:
-	_thrust = kit.gauge("Thrust")
+	_thrust = kit.gauge("Impulse")
 	c.add_child(_thrust)
 
 
+func _update_controls(_snap_data: Dictionary) -> void:
+	sync_slider("impulse", float(ship("propulsion").get("impulse_target", 0.0)))
+
+
 func _update_extra(_snap_data: Dictionary) -> void:
-	for id in ids:
-		var c := comp(id)
-		if c.get("kind", "") == "consumer":
-			_thrust.set_reading(float(c.get("allocation", 0.0)) * float(c.get("efficiency", 1.0)), 1.0, UiStatus.level_of(c), "%d%%" % int(round(float(c.get("allocation", 0.0)) * float(c.get("efficiency", 1.0)) * 100.0)))
-			return
+	var p := ship("propulsion")
+	var v := float(p.get("impulse", 0.0))
+	_thrust.set_reading(v, 1.0, UiStatus.OK, "%d%%" % int(round(v * 100.0)))

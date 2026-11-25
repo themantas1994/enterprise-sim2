@@ -36,7 +36,7 @@ func set_groups(groups: Array) -> void:
 		_group_rows.append(flow)
 		for id: String in g["ids"]:
 			var node := kit.button()
-			node.custom_minimum_size = Vector2(UiScale.dp(144.0), UiScale.dp(56.0))
+			node.custom_minimum_size = Vector2(UiScale.dp(168.0), UiScale.dp(56.0))
 			node.pressed.connect(func() -> void: node_pressed.emit(id))
 			flow.add_child(node)
 			nodes[id] = node

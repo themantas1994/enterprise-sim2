@@ -7,10 +7,10 @@ static func build() -> Theme:
 	var t := Theme.new()
 	var font := TngTokens.font()
 	t.default_font = font
-	t.default_font_size = int(UiScale.dp(20.0))
+	t.default_font_size = int(UiScale.dp(18.0))
 	for type_name in ["Label", "Button", "LineEdit", "RichTextLabel"]:
 		t.set_font("font", type_name, font)
-		t.set_font_size("font_size", type_name, int(UiScale.dp(20.0)))
+		t.set_font_size("font_size", type_name, int(UiScale.dp(18.0)))
 	t.set_color("font_color", "Label", TngTokens.TEXT)
 	t.set_color("font_color", "Button", TngTokens.BLACK)
 	var flat := StyleBoxFlat.new()

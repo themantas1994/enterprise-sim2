@@ -36,4 +36,4 @@ func _draw() -> void:
 		TngTokens.draw_marker(self, UiStatus.CAUTION, Vector2(h * 0.75, h * 0.5), h * 0.2, TngTokens.BLACK, fill_color)
 	else:
 		TngTokens.draw_marker(self, UiStatus.OK, Vector2(h * 0.55, h * 0.5), h * 0.16, TngTokens.BLACK, fill_color)
-	draw_string(font, Vector2(tx + (h * 0.3 if alert == "yellow" else 0.0), h * 0.5 + fs * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, maxf(0.0, r.size.x - tx * 1.4), fs, text_color)
+	draw_string(font, Vector2(tx + (h * 0.3 if alert == "yellow" else 0.0), h * 0.5 + fs * 0.35), TngTokens.fit(font, text, fs, maxf(0.0, r.size.x - tx * 1.4)), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, text_color)

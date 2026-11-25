@@ -39,17 +39,21 @@ func _draw() -> void:
 		TngTokens.draw_marker(self, level, Vector2(pad, r.size.y * 0.5), marker_r, TngTokens.BLACK, base)
 		text_x = pad + marker_r * 2.0 + UiScale.dp(4.0)
 	var avail := maxf(0.0, r.size.x - text_x - pad * 0.6)
-	# Shrink long captions (down to 60%) instead of cutting them off.
-	var widest := maxf(font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x, font.get_string_size(sub_caption, HORIZONTAL_ALIGNMENT_LEFT, -1, int(fs * 0.75)).x)
+	# Shrink long captions down to the minimum readable size, then cut with an ellipsis.
+	var min_fs := TngTokens.min_font()
+	var small := maxi(min_fs, int(fs * 0.75))
+	var widest := maxf(font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x, font.get_string_size(sub_caption, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x)
 	if widest > avail and widest > 0.0:
-		fs = maxi(int(fs * 0.6), int(fs * avail / widest))
+		fs = maxi(min_fs, int(fs * avail / widest))
+		small = maxi(min_fs, int(small * avail / widest))
+	var cap_text := TngTokens.fit(font, caption, fs, avail)
+	var sub_text := TngTokens.fit(font, sub_caption, small, avail)
 	if sub_caption == "":
 		var ty := r.size.y * 0.5 + fs * 0.35
-		draw_string(font, Vector2(text_x if show_marker else 0.0, ty), caption, HORIZONTAL_ALIGNMENT_LEFT if show_marker else HORIZONTAL_ALIGNMENT_CENTER, avail if show_marker else r.size.x, fs, TngTokens.BLACK)
+		draw_string(font, Vector2(text_x if show_marker else 0.0, ty), cap_text, HORIZONTAL_ALIGNMENT_LEFT if show_marker else HORIZONTAL_ALIGNMENT_CENTER, -1 if show_marker else r.size.x, fs, TngTokens.BLACK)
 	else:
-		var small := int(fs * 0.75)
-		draw_string(font, Vector2(text_x, r.size.y * 0.46), caption, HORIZONTAL_ALIGNMENT_LEFT, avail, fs, TngTokens.BLACK)
-		draw_string(font, Vector2(text_x, r.size.y * 0.46 + small + UiScale.dp(2.0)), sub_caption, HORIZONTAL_ALIGNMENT_LEFT, avail, small, TngTokens.BLACK)
+		draw_string(font, Vector2(text_x, r.size.y * 0.46), cap_text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, TngTokens.BLACK)
+		draw_string(font, Vector2(text_x, r.size.y * 0.46 + small + UiScale.dp(2.0)), sub_text, HORIZONTAL_ALIGNMENT_LEFT, -1, small, TngTokens.BLACK)
 	if fill >= 0.0:
 		var bar := Rect2(Vector2(pad, r.size.y - UiScale.dp(7.0)), Vector2(maxf(0.0, r.size.x - pad * 2.0), UiScale.dp(3.0)))
 		draw_rect(bar, base.darkened(0.45))
