@@ -16,6 +16,8 @@ extends RefCounted
 ##   set_priority {target, value: int within +-1e9}   consumer priority (lower number = more important)
 ##   set_output {target, value 0..max_output}   producer output setting; never above the ship's hard maximum
 ##   damage {target, amount > 0}            remove integrity from any component
+##   add_heat {target, amount}              add (or, if negative, remove) heat on any component; temperature never
+##                                          falls below ambient. For heat sources and sinks outside the core model
 ##   repair {target}                        integrity back to 100; clears a conduit cut (rejected for a reactor
 ##                                          in breach or ejected)
 ##   cut_conduit {target} / restore_conduit {target}   manual cut flag (restore needs integrity > 0)
@@ -259,7 +261,7 @@ func _apply(cmd: Dictionary) -> String:
 			return ""
 		"set_allocation", "set_demand", "set_priority", "set_output":
 			return _cmd_set(type, cmd)
-		"damage", "repair", "cut_conduit", "restore_conduit":
+		"damage", "repair", "cut_conduit", "restore_conduit", "add_heat":
 			return _cmd_component(type, cmd)
 		"reactor_start", "reactor_online", "reactor_shutdown", "reactor_eject":
 			var c := _target(cmd, "producer")
@@ -310,6 +312,11 @@ func _cmd_component(type: String, cmd: Dictionary) -> String:
 			if typeof(a) != TYPE_INT and typeof(a) != TYPE_FLOAT or is_nan(float(a)) or is_inf(float(a)) or float(a) <= 0.0:
 				return "amount must be a finite number > 0"
 			Thermal.damage(c, float(a))
+		"add_heat":
+			var h: Variant = cmd.get("amount", null)
+			if typeof(h) != TYPE_INT and typeof(h) != TYPE_FLOAT or is_nan(float(h)) or is_inf(float(h)) or absf(float(h)) > LIMIT:
+				return "amount must be a finite number within +-1e9"
+			c["temp"] = maxf(c["ambient"], c["temp"] + float(h))
 		"repair":
 			if c["kind"] == "producer" and c["reactor"] and not ReactorFsm.present(c):
 				return "reactor is beyond repair in state " + c["state"]
