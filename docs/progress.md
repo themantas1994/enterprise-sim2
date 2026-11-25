@@ -24,3 +24,39 @@ One line per spawned worker: agent, task, model, effort, result.
 - Agent types: the plan names `implementer` and `reviewer` types. This session only offers `general-purpose` (an `implementer` call was rejected as not found), so Kit and Nora ran as `general-purpose` with the model and effort of the plan.
 - Source gate: the engine decision cites ENG ids from the fact sheet; the engine facts the skeleton uses were copied into `docs/sources.md` as `ENG-GODOT-*` rows, and Kit appended `ENG-CI-*` rows for action pins and tool downloads.
 - Open from N1 (not fixed): finding 7 (cached download marker; covered by the pinned checksums) and CODEOWNERS (needs a named owner).
+
+### Verification (run 2026-11-25 from a clean state, fresh tool directory, build/, addons/ and .godot/ removed)
+
+Each step ran with `set -uo pipefail`, its own log, and its real exit status.
+
+| step | exit |
+|---|---|
+| install Godot 4.7.2 editor and templates (checksums pinned in scripts/pins.env) | 0 |
+| install GdUnit4 (pinned commit) | 0 |
+| scripts/check_sim_purity.sh | 0 |
+| scripts/check_ship_sources.py | 0 |
+| scripts/selftest_checks.sh (both checks fail on bad input) | 0 |
+| scripts/run_tests.sh: 3 test cases, 0 errors, 0 failures (JUnit XML) | 0 |
+| export Linux / Windows / Android debug (0 ERROR lines in each log) | 0 / 0 / 0 |
+| Android SDK and debug keystore setup (scripts/setup_android.sh) | 0 |
+
+Artifact sizes: Linux 73,710,816 B; Windows exe 103,183,728 B; Android APK 56,968,369 B.
+No keystore, tool directory or build output is tracked in git.
+
+Not verified: the GitHub Actions workflow has not run on GitHub (YAML parse only); the exports were not run
+on a real Windows machine or an Android emulator; the Android APK has not been installed on a device.
+
+### ADR 0001 checks
+
+- C1 GdUnit4 on Godot 4.7.2: passes with v6.2.3 (README lists 4.7 and 4.7.1 only); no fallback to 4.7.1.
+- C2 and C3 (scanline shader on Compatibility, `_draw()`): drawn correctly on Linux in a software-GL screenshot;
+  not yet run on Windows or Android.
+- C4 debug keystore in CLI export: the export generated its own when the variables were unset; CI still creates one.
+- C5 workflow: unrun on GitHub. C6 sizes: recorded above.
+
+### Plan check
+
+Spawns match the model and effort of the agent plan (Orson sonnet/high confirmed at session start; Iris sonnet/medium;
+Dara opus/high; Kit sonnet/medium; Nora sonnet/high). One mismatch: Kit and Nora ran as the `general-purpose` agent type
+because `implementer` and `reviewer` are not available in this session. One spawn beyond the plan: Kit was resumed once
+to fix the confirmed review findings, as requested.
