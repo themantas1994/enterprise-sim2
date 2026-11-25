@@ -1,0 +1,5 @@
+Antonio-Regular.ttf, version 1.002, copyright 2013 The Antonio Project Authors.
+Licensed under the SIL Open Font License 1.1; the full licence text is in OFL.txt in this folder.
+Source: https://github.com/googlefonts/antonioFont, commit 08562998b10c6c21a3505f47236b42f5d58c9909,
+path Fonts/TTF/Antonio-Regular.ttf. SHA-256 60b405e2c3c5ab08bbff4d933d0e1c03bba5c9a1da3c01d20a559c919ef15b5a.
+The font file is unmodified. It is not sold on its own.
