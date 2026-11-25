@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://ui/panels/empty_panel.gd" id="1"]
+[ext_resource type="Shader" path="res://ui/panels/scanlines.gdshader" id="2"]
+
+[sub_resource type="ShaderMaterial" id="1"]
+shader = ExtResource("2")
+shader_parameter/period_px = 4.0
+shader_parameter/strength = 0.35
+
+[node name="EmptyPanel" type="Control"]
+material = SubResource("1")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")

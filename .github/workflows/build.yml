@@ -1,0 +1,207 @@
+# CI for the Godot project: checks, headless tests, and debug exports for Windows, Linux and Android.
+#
+# All tool versions live in scripts/pins.env (Godot 4.7.2, GdUnit4, Android toolchain per ENG-GODOT-004).
+# The same scripts run locally; see the header of each file in scripts/.
+#
+# Security rules for this file:
+#   - default token permission is read-only; no job asks for more
+#   - no pull_request_target; no secrets are available to pull requests from forks
+#   - every third-party action is pinned to a full commit SHA (version in the trailing comment)
+#   - no github.* or other untrusted expression is interpolated into `run:`; values go through env
+#   - the Godot download is verified against the official SHA512-SUMS.txt of the same release
+#   - the Android DEBUG keystore is generated inside the job by keytool and never stored in the repo
+#
+# GitHub secrets read ONLY by the disabled `release-android` stub (set them as environment secrets of an
+# environment named "release", with required reviewers):
+#   ANDROID_RELEASE_KEYSTORE_BASE64    base64 of the release keystore file
+#   ANDROID_RELEASE_KEYSTORE_USER      key alias
+#   ANDROID_RELEASE_KEYSTORE_PASSWORD  keystore and key password
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_HOME: ${{ github.workspace }}/.godot-tools
+
+jobs:
+  checks:
+    name: Static checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Sim purity (ADR 0001)
+        run: scripts/check_sim_purity.sh
+      - name: Ship data has a source for every value (PLAN section 9)
+        run: python3 -I scripts/check_ship_sources.py
+      - name: Check scripts reject bad input
+        run: scripts/selftest_checks.sh
+
+  test:
+    name: GdUnit4 tests (headless)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Cache Godot editor and templates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .godot-tools/bin
+            .godot-tools/xdg-data
+            .godot-tools/.verified-*
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/pins.env', 'scripts/install_godot.sh') }}
+      - run: scripts/install_godot.sh
+      - run: scripts/install_gdunit4.sh
+      - name: Run tests
+        run: scripts/run_tests.sh
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-reports
+          path: build/reports
+          if-no-files-found: warn
+          retention-days: 14
+
+  export-linux:
+    name: Export Linux (debug)
+    needs: [checks, test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Cache Godot editor and templates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .godot-tools/bin
+            .godot-tools/xdg-data
+            .godot-tools/.verified-*
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/pins.env', 'scripts/install_godot.sh') }}
+      - run: scripts/install_godot.sh
+      - run: scripts/export.sh linux debug
+      - name: Artifact sizes (check C6)
+        run: scripts/print_sizes.sh build/linux
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: linux-x86_64-debug
+          path: build/linux/
+          if-no-files-found: error
+          retention-days: 14
+
+  export-windows:
+    name: Export Windows (debug)
+    needs: [checks, test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Cache Godot editor and templates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .godot-tools/bin
+            .godot-tools/xdg-data
+            .godot-tools/.verified-*
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/pins.env', 'scripts/install_godot.sh') }}
+      - run: scripts/install_godot.sh
+      - run: scripts/export.sh windows debug
+      - name: Artifact sizes (check C6)
+        run: scripts/print_sizes.sh build/windows
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-x86_64-debug
+          path: build/windows/
+          if-no-files-found: error
+          retention-days: 14
+
+  export-android:
+    name: Export Android debug APK
+    needs: [checks, test]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: JDK 17 (ENG-GODOT-004)
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Cache Godot editor and templates
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            .godot-tools/bin
+            .godot-tools/xdg-data
+            .godot-tools/.verified-*
+          key: godot-${{ runner.os }}-${{ hashFiles('scripts/pins.env', 'scripts/install_godot.sh') }}
+      - run: scripts/install_godot.sh
+      - name: Android SDK packages, editor settings and DEBUG keystore (check C4)
+        # Generates the keystore with keytool under .godot-tools (git-ignored) and appends
+        # GODOT_ANDROID_KEYSTORE_DEBUG_PATH/_USER/_PASSWORD to GITHUB_ENV (password masked).
+        env:
+          # A writable SDK root this job controls; the runner's preinstalled SDK is not used.
+          ANDROID_SDK_DIR: ${{ runner.temp }}/android-sdk
+        run: scripts/setup_android.sh
+      - run: scripts/export.sh android debug
+      - name: Artifact sizes (check C6)
+        run: scripts/print_sizes.sh build/android
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android-debug-apk
+          path: build/android/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  # Disabled stub. Signed AAB for the store needs the Gradle build template, which is not set up yet
+  # (ENG-GODOT-004: Gradle only for .aab). Before enabling it:
+  #   - remove `false &&` below; the rest of the condition keeps it unreachable from pull requests
+  #   - the "release" environment (Settings > Environments) needs deployment branch/tag rules that allow
+  #     only release tags, and required reviewers; the secrets live on that environment only
+  # Secrets are read from GitHub secrets only and passed through step-level env, never written to GITHUB_ENV.
+  release-android:
+    name: Release AAB (stub, disabled)
+    if: false && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    needs: [export-android]
+    runs-on: ubuntu-24.04
+    environment: release
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Export signed AAB
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_RELEASE_KEYSTORE_USER }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+        run: |
+          umask 077
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
+          echo "TODO - install the Gradle build template, enable gradle_build/use_gradle_build, export the .aab"
+          exit 1

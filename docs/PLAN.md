@@ -41,7 +41,7 @@ Alternatives considered:
 - Web stack (Tauri + Capacitor): two wrappers to maintain; touch latency on Android is worse.
 
 Supporting pieces:
-- Tests: GUT (Godot Unit Test) for the simulation core, run headless.
+- Tests: GdUnit4 for the simulation core, run headless (chosen in `docs/decisions/0001-engine.md`).
 - CI: GitHub Actions with a headless Godot export image; artifacts: Windows `.exe`, Linux x86_64
   binary, Android `.apk` (debug) and later a signed `.aab`.
 - Android needs the Android SDK, JDK 17 and a release keystore (kept out of the repo).
@@ -207,7 +207,7 @@ enterprise-sim2/
     widgets/        # era-independent widget interfaces
     themes/tmp/ tng/ fc/   # era kits: theme, fonts, colours, sounds, shaders
     panels/         # one scene per panel
-  tests/            # GUT tests
+  tests/            # GdUnit4 tests
   export_presets.cfg
   .github/workflows/build.yml
 ```
@@ -226,7 +226,7 @@ Each phase ends with its acceptance checks passing in CI.
    Accept: CI produces three artifacts; the APK installs and starts on an Android device or emulator.
 2. **Simulation core**: tick loop, node graph, power solver with priorities, heat/damage, reactor state
    machine, save/load. No UI.
-   Accept: GUT tests cover power shortage shedding, conduit cut and reroute, reactor overload to breach,
+   Accept: GdUnit4 tests cover power shortage shedding, conduit cut and reroute, reactor overload to breach,
    ejection; same seed gives the same run.
 3. **1701-D first** (best documented ship): ship data, LCARS kit, panels for MSD, warp core, fuel, EPS,
    shields, impulse, SIF/IDF, damage control; 3 scenarios (core breach, Borg drain, coolant leak).
@@ -240,9 +240,10 @@ Each phase ends with its acceptance checks passing in CI.
 
 ## 9. Verification plan
 
-- `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit` for the sim core (exit status
+- GdUnit4 command-line runner under `godot --headless` for the sim core (exact command in the CI workflow; exit status
   kept in CI).
-- `godot --headless --export-release "<preset>"` for each platform in CI.
+- `godot --headless --export-debug "<preset>"` for each platform in CI (debug builds in Phase 1;
+  `--export-release` is used once release signing exists).
 - Android smoke test: install the APK on an emulator, start it, check logcat for errors, take a
   screenshot of each panel.
 - Data check: a script that fails if a ship value lacks a `source` field.
@@ -263,10 +264,12 @@ ship any text or images from the books or shows.
 ## Appendix A: 1701-D reference values (TNG Technical Manual)
 
 Paraphrased facts, section numbers in brackets. Use these as the `source:` values in `ships/1701d.json`.
+The verified values live in `docs/sources.md`; where this appendix and the ledger differ, the ledger wins
+(Phase 1 checks found a few small differences, for example the phaser segment output is 5.1 MW).
 
 **Design targets** [1.1, 5.1]: normal cruise Warp 6 until fuel runs out; maximum cruise Warp 9.2;
 Warp 9.6 for up to 12 hours. Ship mass about 4.96 million tonnes. Defensive shielding rated above
-7.3 x 10^5 kW dissipation. Phaser emitter segments 5.01 MW each.
+7.3 x 10^5 kW dissipation. Phaser emitter segments 5.1 MW each.
 
 **Warp core** [5.2]
 - Matter injector: 6 cross-fed injector sets; slush deuterium preburned to about 10^6 K; a failed
@@ -325,7 +328,7 @@ Warp 8 (675,000 MW surge); above about 55% output some sensors go blind.
 **Tractor beam** [7.5]: main emitters built on two 16 MW sources, each with two 450 millicochrane
 amplifiers.
 
-**Phasers** [11.1]: emitter segments 5.01 MW; fed from EPS primary trunks through an EPS submaster
+**Phasers** [11.1]: emitter segments 5.1 MW; fed from EPS primary trunks through an EPS submaster
 flow regulator (iris response 0.01 s, magnetic gate 0.0003 s).
 
 **Photon torpedoes** [11.3]: maximum effective range about 3,500,000 km; launchers forward and aft
