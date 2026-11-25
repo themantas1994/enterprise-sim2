@@ -14,6 +14,12 @@ build/
 *.jks
 *.p12
 *.pem
+*.pfx
+*.key
+*.p8
+keystore.properties
+local.properties
+export_credentials.cfg
 .env
 .env.*
 # Third-party test framework, fetched at the pinned commit by scripts/install_gdunit4.sh
@@ -24,6 +30,10 @@ addons/
 .DS_Store
 Thumbs.db
 *.tmp
-/android/
+# Gradle build template (android/build/) will be committed later, so android/ is NOT ignored wholesale.
+# Only generated Gradle output is ignored.
+android/build/build/
+android/build/.gradle/
+android/build/.cxx/
 # Tool install dir used by CI (scripts/env.sh GODOT_HOME)
 .godot-tools/

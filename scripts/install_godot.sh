@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Install the pinned Godot editor and the export templates this project needs into $GODOT_HOME.
-# Every download is verified against the official SHA512-SUMS.txt of the same release.
+# Every download is verified against the SHA512 values pinned in scripts/pins.env (not against a
+# checksum file fetched from the same server as the download).
 # Usage: scripts/install_godot.sh        (GODOT_HOME defaults to ~/.cache/enterprise-sim2/godot)
 set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
@@ -8,7 +9,9 @@ set -euo pipefail
 editor_zip="Godot_v${GODOT_RELEASE_TAG}_linux.x86_64.zip"
 tpz="Godot_v${GODOT_RELEASE_TAG}_export_templates.tpz"
 dl="$GODOT_HOME/download"
+umask 022
 mkdir -p "$dl" "$GODOT_HOME/bin" "$TEMPLATES_DIR" "$XDG_CONFIG_HOME"
+touch "$GODOT_HOME/.gdignore"   # keep Godot from scanning tools if this dir sits inside the project
 
 if [ -x "$GODOT_BIN" ] && [ -f "$TEMPLATES_DIR/version.txt" ] && [ -f "$GODOT_HOME/.verified-$GODOT_VERSION" ]; then
   echo "Godot $GODOT_VERSION already installed in $GODOT_HOME"
@@ -16,14 +19,15 @@ if [ -x "$GODOT_BIN" ] && [ -f "$TEMPLATES_DIR/version.txt" ] && [ -f "$GODOT_HO
   exit 0
 fi
 
-curl -fsSL --retry 3 -o "$dl/SHA512-SUMS.txt" "$GODOT_BASE_URL/SHA512-SUMS.txt"
-for f in "$editor_zip" "$tpz"; do
-  if ! ( cd "$dl" && grep -F "  $f" SHA512-SUMS.txt | sha512sum -c --status - ) 2>/dev/null; then
-    echo "downloading $f"
-    curl -fSL --retry 3 -o "$dl/$f" "$GODOT_BASE_URL/$f"
+fetch() { # $1 file name, $2 expected sha512
+  if ! echo "$2  $dl/$1" | sha512sum -c --status - 2>/dev/null; then
+    echo "downloading $1"
+    curl --proto '=https' --tlsv1.2 -fSL --retry 3 -o "$dl/$1" "$GODOT_BASE_URL/$1"
   fi
-  ( cd "$dl" && grep -F "  $f" SHA512-SUMS.txt | sha512sum -c - )
-done
+  echo "$2  $dl/$1" | sha512sum -c -
+}
+fetch "$editor_zip" "$GODOT_EDITOR_SHA512"
+fetch "$tpz" "$GODOT_TEMPLATES_SHA512"
 
 unzip -oq "$dl/$editor_zip" -d "$dl/editor"
 install -m 755 "$dl/editor/Godot_v${GODOT_RELEASE_TAG}_linux.x86_64" "$GODOT_BIN"

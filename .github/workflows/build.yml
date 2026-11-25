@@ -161,6 +161,9 @@ jobs:
       - name: Android SDK packages, editor settings and DEBUG keystore (check C4)
         # Generates the keystore with keytool under .godot-tools (git-ignored) and appends
         # GODOT_ANDROID_KEYSTORE_DEBUG_PATH/_USER/_PASSWORD to GITHUB_ENV (password masked).
+        env:
+          # A writable SDK root this job controls; the runner's preinstalled SDK is not used.
+          ANDROID_SDK_DIR: ${{ runner.temp }}/android-sdk
         run: scripts/setup_android.sh
       - run: scripts/export.sh android debug
       - name: Artifact sizes (check C6)
@@ -173,11 +176,14 @@ jobs:
           retention-days: 14
 
   # Disabled stub. Signed AAB for the store needs the Gradle build template, which is not set up yet
-  # (ENG-GODOT-004: Gradle only for .aab). Enable only after that work, on tags, with the "release"
-  # environment protected by required reviewers. Secrets are read from GitHub secrets only.
+  # (ENG-GODOT-004: Gradle only for .aab). Before enabling it:
+  #   - remove `false &&` below; the rest of the condition keeps it unreachable from pull requests
+  #   - the "release" environment (Settings > Environments) needs deployment branch/tag rules that allow
+  #     only release tags, and required reviewers; the secrets live on that environment only
+  # Secrets are read from GitHub secrets only and passed through step-level env, never written to GITHUB_ENV.
   release-android:
     name: Release AAB (stub, disabled)
-    if: false
+    if: false && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: [export-android]
     runs-on: ubuntu-24.04
     environment: release
@@ -187,20 +193,15 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Decode release keystore (to the runner temp dir, never into the workspace)
+      - name: Export signed AAB
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
-          KEYSTORE_USER: ${{ secrets.ANDROID_RELEASE_KEYSTORE_USER }}
-          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_RELEASE_KEYSTORE_USER }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
         run: |
           umask 077
-          printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
-          {
-            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/release.keystore"
-            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEYSTORE_USER"
-            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEYSTORE_PASSWORD"
-          } >> "$GITHUB_ENV"
-      - name: Export signed AAB
-        run: |
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH="$RUNNER_TEMP/release.keystore"
+          export GODOT_ANDROID_KEYSTORE_RELEASE_PATH
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$GODOT_ANDROID_KEYSTORE_RELEASE_PATH"
           echo "TODO - install the Gradle build template, enable gradle_build/use_gradle_build, export the .aab"
           exit 1
