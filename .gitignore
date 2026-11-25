@@ -1,0 +1,29 @@
+# Godot
+.godot/
+.import/
+*.translation
+# Build output and reports
+build/
+*.apk
+*.aab
+*.exe
+*.x86_64
+*.pck
+# Signing material and secrets: never commit
+*.keystore
+*.jks
+*.p12
+*.pem
+.env
+.env.*
+# Third-party test framework, fetched at the pinned commit by scripts/install_gdunit4.sh
+addons/
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+/android/
+# Tool install dir used by CI (scripts/env.sh GODOT_HOME)
+.godot-tools/
