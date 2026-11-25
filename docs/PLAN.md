@@ -41,7 +41,7 @@ Alternatives considered:
 - Web stack (Tauri + Capacitor): two wrappers to maintain; touch latency on Android is worse.
 
 Supporting pieces:
-- Tests: GUT (Godot Unit Test) for the simulation core, run headless.
+- Tests: GdUnit4 for the simulation core, run headless (chosen in `docs/decisions/0001-engine.md`).
 - CI: GitHub Actions with a headless Godot export image; artifacts: Windows `.exe`, Linux x86_64
   binary, Android `.apk` (debug) and later a signed `.aab`.
 - Android needs the Android SDK, JDK 17 and a release keystore (kept out of the repo).
@@ -207,7 +207,7 @@ enterprise-sim2/
     widgets/        # era-independent widget interfaces
     themes/tmp/ tng/ fc/   # era kits: theme, fonts, colours, sounds, shaders
     panels/         # one scene per panel
-  tests/            # GUT tests
+  tests/            # GdUnit4 tests
   export_presets.cfg
   .github/workflows/build.yml
 ```
@@ -226,7 +226,7 @@ Each phase ends with its acceptance checks passing in CI.
    Accept: CI produces three artifacts; the APK installs and starts on an Android device or emulator.
 2. **Simulation core**: tick loop, node graph, power solver with priorities, heat/damage, reactor state
    machine, save/load. No UI.
-   Accept: GUT tests cover power shortage shedding, conduit cut and reroute, reactor overload to breach,
+   Accept: GdUnit4 tests cover power shortage shedding, conduit cut and reroute, reactor overload to breach,
    ejection; same seed gives the same run.
 3. **1701-D first** (best documented ship): ship data, LCARS kit, panels for MSD, warp core, fuel, EPS,
    shields, impulse, SIF/IDF, damage control; 3 scenarios (core breach, Borg drain, coolant leak).
@@ -240,7 +240,7 @@ Each phase ends with its acceptance checks passing in CI.
 
 ## 9. Verification plan
 
-- `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit` for the sim core (exit status
+- GdUnit4 command-line runner under `godot --headless` for the sim core (exact command in the CI workflow; exit status
   kept in CI).
 - `godot --headless --export-release "<preset>"` for each platform in CI.
 - Android smoke test: install the APK on an emulator, start it, check logcat for errors, take a
