@@ -5,6 +5,7 @@ extends PanelBase
 const FACINGS := ["fore", "aft", "port", "stbd"]
 const ROTATE_FREQ := 397      # UI step for ROTATE, a game control, not a source value
 const ROTATE_MOD := 613
+const LEVEL_MIN := 0.85      # shield_set_level accepts 0.85..1
 const FREQ_RANGE := 999       # shield_set accepts 0..999
 
 
@@ -47,7 +48,7 @@ func _build_controls() -> void:
 	add_button("rotate", "ROTATE", rotate_now, UiStatus.OK, "FREQ + MOD")
 	for f: String in FACINGS:
 		add_slider("w_" + f, "Weight " + f, 0.0, 1.0, 0.05, _weights_cmd, 100.0, 0, "%", _controls)
-	add_slider("level", "Alert level", 0.05, 1.0, 0.05, func(v: float) -> Dictionary: return {"type": "shield_set_level", "value": v}, 100.0, 0, "%", _controls)
+	add_slider("level", "Alert level", LEVEL_MIN, 1.0, 0.01, func(v: float) -> Dictionary: return {"type": "shield_set_level", "value": v}, 100.0, 0, "%", _controls)
 
 
 func _build_extra(c: VBoxContainer) -> void:

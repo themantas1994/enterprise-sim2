@@ -3,6 +3,7 @@ extends Control
 ## menu and swaps in the panel scenes. Panels are loaded from res://ui/panels/panel_<id>.tscn.
 
 const PANEL_DIR := "res://ui/panels/"
+const NOTICE_TICKS := 80   # how long an event notice replaces the alert text (8 s)
 
 var host: Node
 var kit: WidgetKit
@@ -12,6 +13,8 @@ var _tabs: HBoxContainer
 var _body: Control
 var _tab_sig := ""
 var _current := ""
+var _notice := ""
+var _notice_until := -1
 
 
 func _ready() -> void:
@@ -61,7 +64,17 @@ func _ready() -> void:
 
 func _on_snapshot(snap: Dictionary, _prev: Dictionary) -> void:
 	var ship: Dictionary = snap.get("ship", {})
-	_banner.set_alert(str(ship.get("alert", snap.get("alert", "green"))))
+	var tick := int(snap.get("tick", 0))
+	for ev: Dictionary in ship.get("events", []):
+		match str(ev.get("type", "")):
+			"field_degraded":
+				_notice = "%s DEGRADED: %s" % [str(ev.get("system", "")).to_upper(), str(ev.get("hull", "")).to_upper()]
+				_notice_until = tick + NOTICE_TICKS
+			"core_kept":
+				_notice = "CORE KEPT"
+				_notice_until = tick + NOTICE_TICKS
+	var level := str(ship.get("alert", snap.get("alert", "green")))
+	_banner.set_alert(level, _notice if tick <= _notice_until else "")
 
 
 func _refresh_tabs() -> void:

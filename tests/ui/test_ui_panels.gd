@@ -416,6 +416,33 @@ func test_host_disposes_the_runtime_it_replaces_and_on_exit() -> void:
 	assert_bool(b.disposed).is_true()
 
 
+func test_sif_idf_shows_degraded_hulls_and_the_banner_shows_event_notices() -> void:
+	var m := await _mount("sif_idf", "desktop")
+	m[1].ship_extra = {"sif_idf": {"sif_strength": 0.5, "idf_strength": 1.0, "degraded_hulls": {"sif": ["saucer"], "idf": []}}}
+	m[2].step_once()
+	assert_str(m[0]._hulls.value_text).contains("SIF SAUCER")
+	var vp := _viewport("desktop")
+	var main: Control = (load("res://ui/main.tscn") as PackedScene).instantiate()
+	main.host = m[2]
+	vp.add_child(main)
+	m[1].ship_extra = {"sif_idf": {}}
+	m[1].events = []
+	var snap: Dictionary = m[2].snapshot.duplicate(true)
+	snap["ship"]["events"] = [{"type": "field_degraded", "system": "idf", "hull": "engineering"}]
+	main._on_snapshot(snap, {})
+	assert_str(main._banner.text).is_equal("IDF DEGRADED: ENGINEERING")
+	snap["ship"]["events"] = [{"type": "core_kept"}]
+	main._on_snapshot(snap, {})
+	assert_str(main._banner.text).is_equal("CORE KEPT")
+
+
+func test_shield_level_slider_is_limited_to_the_accepted_range() -> void:
+	var m := await _mount("shields", "desktop")
+	var level := m[0].find_child("ctl_level", true, false) as PanelSlider
+	assert_float(level.min_value).is_equal(0.85)
+	assert_float(level.max_value).is_equal(1.0)
+
+
 func test_alert_levels_differ_by_shape_and_blink() -> void:
 	var shapes := {}
 	var periods := {}
