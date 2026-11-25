@@ -72,8 +72,8 @@ func test_reduced_power_keeps_the_core_when_at_warp() -> void:
 func test_damage_control_repairs_in_the_estimated_time_and_lists_the_queue() -> void:
 	_rt = H.make()
 	H.run(_rt, 3)
-	_rt.send({"type": "damage", "target": "eps_sub_weapons", "amount": 30})
-	_rt.send({"type": "damage", "target": "phaser_array", "amount": 80})
+	_rt.send_debug({"type": "damage", "target": "eps_sub_weapons", "amount": 30})
+	_rt.send_debug({"type": "damage", "target": "phaser_array", "amount": 80})
 	H.run(_rt, 2)
 	var dc: Dictionary = _rt.snapshot()["ship"]["damage_control"]
 	assert_array(dc["queue"]).has_size(2)
@@ -118,11 +118,11 @@ func test_a_team_can_be_recalled_and_a_cut_conduit_is_repairable() -> void:
 func test_a_reactor_in_breach_cannot_be_repaired() -> void:
 	_rt = H.make()
 	H.run(_rt, 3)
-	_rt.send({"type": "damage", "target": "warp_core", "amount": 70})
+	_rt.send_debug({"type": "damage", "target": "warp_core", "amount": 70})
 	var n := H.run_until(_rt, func() -> bool: return H.comp(_rt, "warp_core")["state"] == "breach", 1400)
 	assert_int(n).is_less(1400)
 	assert_bool(H.accepted(_rt, {"type": "assign_team", "team": "dc_team_1", "target": "warp_core"})).is_false()
-	assert_bool(H.accepted(_rt, {"type": "repair", "target": "warp_core"})).is_false()
+	assert_bool(_rt.send_debug({"type": "repair", "target": "warp_core"})["accepted"]).is_false()
 	var q: Array = _rt.snapshot()["ship"]["damage_control"]["queue"]
 	var found := false
 	for e: Dictionary in q:

@@ -16,7 +16,7 @@ func test_shortage_sheds_lowest_priority_first() -> void:
 	_rt = H.make()
 	H.run(_rt, 20)
 	# one small source left: core 200 MW, main impulse off, battery destroyed
-	_rt.send({"type": "damage", "target": "battery_emergency", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "battery_emergency", "amount": 100})
 	_rt.send({"type": "set_output", "target": "impulse_main", "value": 0})
 	_rt.send({"type": "set_output", "target": "warp_core", "value": 200})
 	H.run(_rt, 10)
@@ -46,14 +46,13 @@ func test_cut_trunk_reroutes_through_the_cross_link() -> void:
 	H.run(_rt, 30)
 	var before: Dictionary = _rt.snapshot()["components"]
 	assert_float(before["eps_trunk_a"]["power"]).is_greater(0.0)
-	assert_float(before["eps_cross_link"]["power"]).is_equal_approx(0.0, 0.001)
 	assert_str(before["life_support"]["state"]).is_equal("ok")
 	_rt.send({"type": "cut_conduit", "target": "eps_trunk_a"})
 	H.run(_rt, 5)
 	var after: Dictionary = _rt.snapshot()["components"]
 	assert_str(after["eps_trunk_a"]["state"]).is_equal("cut")
 	assert_float(after["eps_trunk_a"]["power"]).is_equal_approx(0.0, 0.001)
-	assert_float(after["eps_cross_link"]["power"]).is_greater(0.0)  # the saucer side is fed through the cross link
+	assert_float(after["eps_cross_link"]["power"]).is_greater(before["eps_cross_link"]["power"] + 500.0)  # the saucer side is fed through the cross link
 	assert_float(after["eps_trunk_b"]["power"]).is_greater(before["eps_trunk_b"]["power"])
 	for id: String in ["life_support", "computer_core_p1", "shield_grid", "sif_grid", "idf_grid"]:
 		assert_str(after[id]["state"]).override_failure_message(id).is_equal("ok")

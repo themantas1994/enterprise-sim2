@@ -53,7 +53,7 @@ func test_too_late_for_shutdown_then_eject_wins() -> void:
 
 func test_eject_is_refused_when_the_ejection_system_has_no_power() -> void:
 	H.run_until(_rt, func() -> bool: return H.comp(_rt, "warp_core")["state"] == "containment_failing", 600)
-	_rt.send({"type": "damage", "target": "warp_core_aux", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "warp_core_aux", "amount": 100})
 	H.run(_rt, 3)
 	var r := _rt.send({"type": "reactor_eject", "target": "warp_core"})
 	assert_bool(r["accepted"]).is_false()

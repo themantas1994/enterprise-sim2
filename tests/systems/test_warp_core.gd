@@ -51,16 +51,16 @@ func test_cold_start_sequence_follows_the_manual() -> void:
 
 func test_start_up_stalls_without_power_and_resumes() -> void:
 	_rt = _cold()
-	_rt.send({"type": "damage", "target": "impulse_main", "amount": 100})  # no ship power at all
-	_rt.send({"type": "damage", "target": "battery_emergency", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "impulse_main", "amount": 100})  # no ship power at all
+	_rt.send_debug({"type": "damage", "target": "battery_emergency", "amount": 100})
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "reactor_start", "target": "warp_core"})).is_true()
 	H.run(_rt, 30)
 	assert_str(_warp()["stage"]).is_equal("heating")
 	assert_str(_warp()["stalled"]).is_not_empty()
 	assert_float(_warp()["chamber_k"]).is_less(1000.0)
-	_rt.send({"type": "repair", "target": "impulse_main"})
-	_rt.send({"type": "repair", "target": "battery_emergency"})
+	_rt.send_debug({"type": "repair", "target": "impulse_main"})
+	_rt.send_debug({"type": "repair", "target": "battery_emergency"})
 	H.run(_rt, 30)
 	assert_str(_warp()["stalled"]).is_empty()
 	assert_float(_warp()["chamber_k"]).is_greater(10000.0)
@@ -90,6 +90,7 @@ func test_ratio_moves_to_one_to_one_at_warp_8_and_stays() -> void:
 	H.run(_rt, 5)
 	assert_float(_warp()["ratio_target"]).is_equal_approx(25.0, 0.001)
 	_rt.send({"type": "core_set_mode", "value": "warp"})
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 5000})
 	_rt.send({"type": "set_warp", "value": 8.0})
 	H.run(_rt, 400)
 	assert_float(_rt.snapshot()["ship"]["propulsion"]["warp"]).is_equal_approx(8.0, 0.001)
@@ -119,7 +120,7 @@ func test_matter_injectors_are_redundant_and_the_rest_dilate() -> void:
 	_rt = H.make()
 	H.run(_rt, 5)
 	for i in [1, 2, 3]:
-		_rt.send({"type": "damage", "target": "warp_injector_matter_%d" % i, "amount": 100})
+		_rt.send_debug({"type": "damage", "target": "warp_injector_matter_%d" % i, "amount": 100})
 	H.run(_rt, 3)
 	assert_int(_warp()["matter_usable"]).is_equal(3)
 	assert_float(_warp()["cap"]).is_equal_approx(1.0, 0.001)  # D-WARP-003: the remaining nozzles dilate
@@ -138,33 +139,35 @@ func test_matter_injectors_are_redundant_and_the_rest_dilate() -> void:
 func test_antimatter_nozzles_constrictors_and_alignment_limit_output() -> void:
 	_rt = H.make()
 	H.run(_rt, 5)
-	_rt.send({"type": "damage", "target": "warp_injector_antimatter_1", "amount": 100})
-	_rt.send({"type": "damage", "target": "warp_injector_antimatter_2", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "warp_injector_antimatter_1", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "warp_injector_antimatter_2", "amount": 100})
 	H.run(_rt, 3)
 	assert_float(_warp()["cap"]).is_equal_approx(0.5, 0.001)
-	_rt.send({"type": "repair", "target": "warp_injector_antimatter_1"})
-	_rt.send({"type": "damage", "target": "warp_constrictor_upper", "amount": 50})
+	_rt.send_debug({"type": "repair", "target": "warp_injector_antimatter_1"})
+	_rt.send_debug({"type": "damage", "target": "warp_constrictor_upper", "amount": 50})
 	H.run(_rt, 3)
 	assert_float(_warp()["cap"]).is_equal_approx(0.7, 0.001)
 	_rt.send({"type": "core_set_mode", "value": "warp"})
-	_rt.send({"type": "damage", "target": "warp_dilithium_frame", "amount": 40})
+	_rt.send_debug({"type": "damage", "target": "warp_dilithium_frame", "amount": 40})
 	H.run(_rt, 3)
 	assert_float(_warp()["alignment"]).is_equal_approx(0.6, 0.001)
 	assert_float(_warp()["cap"]).is_less(0.7)
 
 
-func test_setpoint_is_clamped_by_the_cap_and_by_demand() -> void:
+func test_setpoint_is_clamped_by_the_cap() -> void:
 	_rt = H.make()
+	_rt.send({"type": "set_alert", "value": "red"})
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "set_output", "target": "warp_core", "value": 6000})).is_false()
 	assert_bool(H.accepted(_rt, {"type": "set_output", "target": "warp_core", "value": 3000})).is_true()
 	H.run(_rt, 3)
 	assert_float(_warp()["setpoint"]).is_equal(3000.0)
-	_rt.send({"type": "damage", "target": "warp_injector_antimatter_1", "amount": 100})
-	_rt.send({"type": "damage", "target": "warp_injector_antimatter_2", "amount": 100})
-	H.run(_rt, 3)
-	# supply is capped at 0.5 x 5000 = 2500 MW but the ship only wants about 730 MW
-	assert_float(H.comp(_rt, "warp_core")["power"]).is_less(1000.0)
+	assert_float(H.comp(_rt, "warp_core")["power"]).is_greater(2600.0)
+	_rt.send_debug({"type": "damage", "target": "warp_injector_antimatter_1", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "warp_injector_antimatter_2", "amount": 100})
+	H.run(_rt, 5)
+	# the factors scale the setpoint: 3000 x 0.5 = 1500 MW although the red alert load is higher
+	assert_float(H.comp(_rt, "warp_core")["power"]).is_between(1450.0, 1550.0)
 
 
 func test_warp_needs_warp_mode_core_and_nacelles() -> void:
@@ -177,6 +180,6 @@ func test_warp_needs_warp_mode_core_and_nacelles() -> void:
 	H.run(_rt, 200)
 	assert_float(_rt.snapshot()["ship"]["propulsion"]["warp"]).is_equal_approx(6.0, 0.001)
 	assert_bool(H.accepted(_rt, {"type": "core_set_mode", "value": "power"})).is_false()  # not while at warp
-	_rt.send({"type": "damage", "target": "warp_nacelle_port", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "warp_nacelle_port", "amount": 100})
 	H.run(_rt, 3)
 	assert_float(_rt.snapshot()["ship"]["propulsion"]["warp"]).is_equal(0.0)

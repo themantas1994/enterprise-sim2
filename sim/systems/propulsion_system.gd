@@ -7,7 +7,7 @@ extends ShipSystem
 ## (up to 32% at maximum shield output, D-SHLD-020). Warp collapses when the nacelles get less than half their
 ## power, when the core leaves warp mode or goes down, or when the SIF ladder demands it.
 ## Navigational deflector: 27 MW at impulse (D-NAVD-006); at warp 80% (D-NAVD-008) of each running generator
-## (768 MW = 6 sources x 128 MW, D-NAVD-002, D-NAVD-003), 2 generators above warp 8 and 3 above 9.2 (D-NAVD-011).
+## (768 MW = 6 sources x 128 MW, D-NAVD-002, D-NAVD-003), 2 generators above warp 8 and 3 above 9.2 (D-NAVD-011); the 80% above warp 8 is an estimate.
 ## Impulse: fraction 0..1 of normal impulse, which is limited to 0.25 c (D-IMP-006).
 ## Commands: set_warp {value}, set_impulse {value}.
 
@@ -48,7 +48,7 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 	var type: Variant = cmd.get("type", null)
 	var v: Variant = cmd.get("value", null)
 	if type == "set_warp":
-		if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or is_nan(float(v)) or float(v) < 0.0 or float(v) > float(rt.tune("propulsion", "warp_max")):
+		if not finite(v) or float(v) < 0.0 or float(v) > float(rt.tune("propulsion", "warp_max")):
 			return no("warp factor must be within 0..%s" % str(rt.tune("propulsion", "warp_max")))
 		var w := float(v)
 		if w > 0.0:
@@ -66,7 +66,7 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 		warp_target = w
 		return ok()
 	if type == "set_impulse":
-		if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or is_nan(float(v)) or float(v) < 0.0 or float(v) > 1.0:
+		if not finite(v) or float(v) < 0.0 or float(v) > 1.0:
 			return no("impulse must be within 0..1")
 		if float(v) > rt.sif_idf.impulse_cap():
 			return no("inertial damping too weak, impulse limited to %s (D-SIF-014)" % str(rt.sif_idf.impulse_cap()))
@@ -114,11 +114,15 @@ func update(_snap: Dictionary) -> void:
 	var nav_mw := float(rt.tune("propulsion", "nav_impulse_mw"))
 	if wd > 0.0:
 		var gens := 1
-		if wd > 8.0:
+		if wd > float(rt.tune("propulsion", "nav_gens_2_above")):
 			gens = 2
-		if wd > sustained:
+		if wd > float(rt.tune("propulsion", "nav_gens_3_above")):
 			gens = 3
-		nav_mw = float(gens) * float(rt.tune("propulsion", "nav_gen_mw")) * float(rt.tune("propulsion", "nav_warp_fraction"))
+		# D-NAVD-008 gives 80% of normal output up to warp 8; above it the same share is an estimate
+		var frac := float(rt.tune("propulsion", "nav_warp_fraction"))
+		if wd > float(rt.tune("propulsion", "nav_fraction_until")):
+			frac = float(rt.tune("propulsion", "nav_high_fraction"))
+		nav_mw = float(gens) * float(rt.tune("propulsion", "nav_gen_mw")) * frac
 	rt.set_demand("nav_deflector", nav_mw)
 	rt.set_demand("impulse_drive", float(rt.tune("propulsion", "impulse_idle_mw")) + impulse * float(rt.tune("propulsion", "impulse_max_mw")))
 

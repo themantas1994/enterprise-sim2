@@ -16,10 +16,10 @@
       "rated": {"value": 4000.0, "source": "estimate", "reason": "game-sized rated output; output above it counts as overload (D-CORE-004)"},
       "output": {"value": 1500.0, "source": "estimate", "reason": "cruise setting, about 30% of maximum (D-CORE-004)"},
       "startup_ticks": {"value": 5, "source": "estimate", "reason": "generic reactor start-up after the player's sequence is complete (D-CORE-004)"},
-      "breach_ticks": {"value": 1200, "source": "D-CORE-005", "reason": "120 s at 10 Hz, from containment failure to breach"},
+      "breach_ticks": {"value": 1200, "source": "estimate", "reason": "120 s at 10 Hz from containment failure to breach; game countdown derived from the two minutes of D-CORE-001 (D-CORE-005)"},
       "heat_threshold": {"value": 150.0, "source": "estimate", "reason": "game temperature scale; overload above it (D-CORE-004)"},
       "critical_temp": {"value": 220.0, "source": "estimate", "reason": "game temperature scale; containment fails at or above it (D-CORE-004)"},
-      "critical_integrity": {"value": 40.0, "source": "D-CORE-002", "reason": "containment field at 40% in the on-screen event; integrity maps one to one in the game"},
+      "critical_integrity": {"value": 40.0, "source": "estimate", "reason": "the 40% containment field strength of the on-screen event (D-CORE-002) mapped one to one to integrity; the mapping is a game choice (D-CORE-005)"},
       "breach_damage": {"value": 60.0, "source": "estimate", "reason": "damage to the conduits at the core and the components at their far ends (D-CORE-005)"},
       "cooling": {"value": 0.005, "source": "estimate", "reason": "radiative cooling; the coolant loop does the rest (D-COOL-003)"},
       "overload_heat": {"value": 40.0, "source": "estimate", "reason": "heat per tick per unit of load above 1 (D-CORE-004)"}
@@ -71,7 +71,7 @@
       "name": "Auxiliary fusion generator 1",
       "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
       "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
-      "output": {"value": 0.0, "source": "estimate", "reason": "kept off-line until needed (D-MODE-013 rule, game setting) (D-IMP-010)"},
+      "output": {"value": 0.0, "source": "estimate", "reason": "off-line at cruise until needed, game setting (D-IMP-010)"},
       "heat_threshold": {"value": 150.0, "source": "estimate", "reason": "game temperature scale (D-IMP-010)"}
     },
     {
@@ -79,7 +79,7 @@
       "name": "Auxiliary fusion generator 2",
       "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
       "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
-      "output": {"value": 0.0, "source": "estimate", "reason": "kept off-line until needed (D-MODE-013 rule, game setting) (D-IMP-010)"},
+      "output": {"value": 0.0, "source": "estimate", "reason": "off-line at cruise until needed, game setting (D-IMP-010)"},
       "heat_threshold": {"value": 150.0, "source": "estimate", "reason": "game temperature scale (D-IMP-010)"}
     }
   ],
@@ -316,7 +316,7 @@
     {
       "id": "shield_grid",
       "name": "Deflector shield grid",
-      "demand": {"value": 58.0, "source": "estimate", "reason": "initial cruise load: 3 generators x 384 MW x 5%, recomputed every tick; see D-SHLD-011, D-SHLD-012"},
+      "demand": {"value": 1152.0, "source": "D-SHLD-011", "reason": "nominal cruise graviton load, 3 generators x 384 MW; recomputed every tick"},
       "priority": {"value": 5, "source": "estimate", "reason": "overwritten by the mode profile at start (D-EPS-003)"}
     },
     {
@@ -1052,7 +1052,7 @@
       "depressurize_ticks": {"value": 200, "source": "estimate", "reason": "time for the chamber pressure to fall after a shutdown (D-SAFE-001)"},
       "pressurize_ticks": {"value": 150, "source": "estimate", "reason": "game tuning of the start-up step (D-CORE-004)"},
       "matter_min": {"value": 3, "source": "estimate", "reason": "matter injectors needed for full flow; the rest dilate (D-WARP-003 rule, count is game tuning) (D-CORE-004)"},
-      "anti_min": {"value": 2, "source": "estimate", "reason": "antimatter nozzles needed for full flow (D-WARP-004 gives 3, the minimum is game tuning) (D-CORE-004)"},
+      "anti_min": {"value": 2, "source": "estimate", "reason": "antimatter nozzles needed for full flow; D-WARP-003 covers the matter nozzles only, so this redundancy is game tuning (D-WARP-004 gives 3 nozzles) (D-CORE-004)"},
       "constrictor_floor": {"value": 0.4, "source": "estimate", "reason": "output left with a fully damaged constrictor (D-CORE-004)"},
       "ratio_floor": {"value": 0.4, "source": "estimate", "reason": "output factor at worst ratio error (D-CORE-004)"},
       "ratio_penalty": {"value": 0.5, "source": "estimate", "reason": "output loss per unit of relative ratio error (D-CORE-004)"},
@@ -1076,7 +1076,7 @@
       "deuterium_main_m3": {"value": 62500.0, "source": "D-FUEL-007"},
       "deuterium_aux_m3": {"value": 113.0, "source": "D-IMP-005"},
       "endurance_ticks": {"value": 946080000, "source": "D-FUEL-004, D-FUEL-009", "reason": "3 years at 10 ticks per second, at nominal power"},
-      "nominal_mw": {"value": 2000.0, "source": "estimate", "reason": "power at which a full load lasts the endurance (D-FUEL-009)"},
+      "nominal_mw": {"value": 1820.0, "source": "estimate", "reason": "cruise power drawn from the main tank (core plus main impulse, measured 1,818 MW at cruise) so that a full 62,500 m3 deuterium load lasts about 3 years: 3 y x 365 x 86,400 s x 10 ticks/s = 946,080,000 ticks; burn per tick = power / 1,820 MW x 62,500 m3 / 946,080,000 (D-FUEL-009)"},
       "aux_endurance_ticks": {"value": 864000, "source": "estimate", "reason": "24 hours at nominal saucer power, game tuning (D-IMP-005)"},
       "aux_nominal_mw": {"value": 1000.0, "source": "estimate", "reason": "game tuning (D-IMP-005)"},
       "containment_mw": {"value": 15.0, "source": "estimate", "reason": "30 pods x 0.5 MW, game tuning (D-FUEL-001)"},
@@ -1102,11 +1102,11 @@
     },
     "shields": {
       "gen_mw": {"value": 384.0, "source": "D-SHLD-004, D-SHLD-005", "reason": "12 sources x 32 MW"},
-      "cruise_level": {"value": 0.05, "source": "D-SHLD-012"},
+      "cruise_level": {"value": 0.05, "source": "D-SHLD-012", "reason": "displayed shield level at cruise; the cruise draw is the nominal 1,152 MW of D-SHLD-011"},
       "alert_level": {"value": 0.85, "source": "D-SHLD-013"},
       "max_gens": {"value": 7, "source": "D-SHLD-014"},
       "cruise_gens": {"value": 3, "source": "D-SHLD-011, D-SHLD-004, D-SHLD-005", "reason": "1,152 MW cruise graviton load / 384 MW per generator"},
-      "reduced_gens": {"value": 1, "source": "estimate", "reason": "one generator at reduced power, game tuning (D-MODE-012)"},
+      "reduced_gens": {"value": 1, "source": "estimate", "reason": "one generator at reduced power, game tuning (D-EPS-003)"},
       "yellow_standby_level": {"value": 0.15, "source": "estimate", "reason": "partial standby of the secondary generators at yellow alert (D-MODE-004), fraction is game tuning (D-MODE-004)"},
       "backup_units": {"value": 4, "source": "D-SHLD-008"},
       "backup_fraction": {"value": 0.65, "source": "D-SHLD-010"},
@@ -1125,7 +1125,8 @@
       "backup_fraction": {"value": 0.55, "source": "D-SIF-009"},
       "backup_units": {"value": 2, "source": "D-SIF-007"},
       "service_ticks": {"value": 432000, "source": "D-SIF-008", "reason": "12 hours at 10 ticks per second"},
-      "cruise_active": {"value": 2, "source": "D-SIF-013, D-SIF-001, D-SIF-002", "reason": "at least 1 generator per hull, 2 hulls"},
+      "cruise_per_hull": {"value": 1, "source": "D-SIF-013", "reason": "at least 1 active generator per hull in cruise"},
+      "safe_impulse": {"value": 0.2, "source": "estimate", "reason": "impulse fraction counted as inertially safe while the SIF ladder is at level 2 or 3 (D-SIF-017) (D-DMG-001)"},
       "yellow_lost": {"value": 2, "source": "D-SIF-016"},
       "slow_lost": {"value": 3, "source": "D-SIF-017"},
       "red_lost": {"value": 5, "source": "D-SIF-018"},
@@ -1136,7 +1137,8 @@
       "gen_mw": {"value": 6.0, "source": "D-IDF-003, D-IDF-004", "reason": "12 sources x 0.5 MW"},
       "backup_fraction": {"value": 0.65, "source": "D-IDF-009"},
       "backup_units": {"value": 3, "source": "D-IDF-007"},
-      "cruise_active": {"value": 4, "source": "D-IDF-014, D-IDF-001, D-IDF-002", "reason": "at least 2 generators per hull, 2 hulls"},
+      "cruise_per_hull": {"value": 2, "source": "D-IDF-014", "reason": "at least 2 active generators per hull in cruise"},
+      "service_ticks": {"value": 432000, "source": "D-IDF-008", "reason": "12 hours at 10 ticks per second"},
       "lag_ticks": {"value": 3, "source": "D-IDF-013", "reason": "295 ms rounded to 3 ticks of 100 ms"}
     },
     "propulsion": {
@@ -1150,7 +1152,11 @@
       "nac_collapse_pf": {"value": 0.5, "source": "estimate", "reason": "delivered share of nacelle power below which warp collapses (D-CORE-004)"},
       "nav_gen_mw": {"value": 768.0, "source": "D-NAVD-002, D-NAVD-003", "reason": "6 sources x 128 MW"},
       "nav_impulse_mw": {"value": 27.0, "source": "D-NAVD-006"},
-      "nav_warp_fraction": {"value": 0.8, "source": "D-NAVD-008"},
+      "nav_warp_fraction": {"value": 0.8, "source": "D-NAVD-008", "reason": "share of normal output needed up to warp 8"},
+      "nav_fraction_until": {"value": 8.0, "source": "D-NAVD-008", "reason": "the 80% figure holds up to warp 8"},
+      "nav_high_fraction": {"value": 0.8, "source": "estimate", "reason": "above warp 8 the ledger gives no share; the 80% is kept as a game choice (D-NAVD-008)"},
+      "nav_gens_2_above": {"value": 8.0, "source": "D-NAVD-011", "reason": "a second generator runs above warp 8"},
+      "nav_gens_3_above": {"value": 9.2, "source": "D-NAVD-011", "reason": "a third generator runs above warp 9.2"},
       "impulse_idle_mw": {"value": 10.0, "source": "estimate", "reason": "impulse drive idle load (D-IMP-009)"},
       "impulse_max_mw": {"value": 400.0, "source": "estimate", "reason": "impulse drive load at full normal impulse; canon figure D-IMP-003 does not fit the grid (D-IMP-009)"},
       "impulse_slew": {"value": 0.02, "source": "estimate", "reason": "impulse fraction change per tick (D-IMP-009)"},
@@ -1166,7 +1172,7 @@
       "core_frac_yellow": {"value": 0.2, "source": "D-MODE-001"},
       "core_frac_red": {"value": 0.75, "source": "D-MODE-005"},
       "impulse_cruise_mw": {"value": 1200.0, "source": "estimate", "reason": "main impulse setting at cruise: carries ship power if the core goes down (D-SAFE-002) (D-EPS-003)"},
-      "reduced_impulse_mw": {"value": 900.0, "source": "estimate", "reason": "minimum main impulse that covers onboard use (D-MODE-012), game-sized (D-EPS-003)"},
+      "reduced_impulse_mw": {"value": 1100.0, "source": "estimate", "reason": "minimum main impulse that covers onboard use (D-MODE-012), game-sized (D-EPS-003)"},
       "phaser_allocation": {"value": {"cruise": 0.1, "yellow_alert": 0.5, "red_alert": 1.0, "reduced_power": 0.0}, "source": "estimate", "reason": "phaser charge share by mode (D-EPS-003)"},
       "priorities": {"value": {"cruise": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "warp_core_aux": 1, "sif_grid": 3, "idf_grid": 3, "shield_grid": 4, "nav_deflector": 5, "impulse_drive": 5, "warp_nacelle_port": 6, "warp_nacelle_stbd": 6, "phaser_array": 8, "antimatter_generator": 9}, "yellow_alert": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "sif_grid": 2, "idf_grid": 2, "warp_core_aux": 1, "shield_grid": 3, "phaser_array": 4, "nav_deflector": 5, "impulse_drive": 5, "warp_nacelle_port": 6, "warp_nacelle_stbd": 6, "antimatter_generator": 9}, "red_alert": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "sif_grid": 2, "idf_grid": 2, "warp_core_aux": 1, "shield_grid": 3, "phaser_array": 3, "warp_nacelle_port": 4, "warp_nacelle_stbd": 4, "impulse_drive": 4, "nav_deflector": 5, "antimatter_generator": 9}, "reduced_power": {"antimatter_containment": 0, "life_support": 1, "sif_grid": 2, "idf_grid": 2, "computer_core_p1": 3, "computer_core_p2": 3, "computer_core_e1": 3, "warp_core_aux": 1, "impulse_drive": 5, "shield_grid": 6, "nav_deflector": 7, "warp_nacelle_port": 8, "warp_nacelle_stbd": 8, "phaser_array": 9, "antimatter_generator": 9}}, "source": "estimate", "reason": "consumer priorities per mode, lower number = served first; shed lowest priority first (D-EPS-003) (D-EPS-003)"}
     },
@@ -1178,6 +1184,7 @@
       "impulse_setting": {"value": 100.0, "source": "estimate", "reason": "main impulse output at the start: the core carries the load (D-COOL-003)"},
       "leak_damage": {"value": 80.0, "source": "estimate", "reason": "integrity removed from the core coolant loop at start (D-COOL-003)"},
       "time_limit": {"value": 4000, "source": "estimate", "reason": "ticks before the scenario is lost (D-COOL-003)"},
+      "cool_temp": {"value": 135.0, "source": "estimate", "reason": "core temperature at or below which the core counts as cool (90% of the overload temperature) (D-COOL-003)"},
       "win_level": {"value": 60.0, "source": "estimate", "reason": "loop level (percent) needed to win (D-COOL-003)"},
       "hold_ticks": {"value": 50, "source": "estimate", "reason": "ticks the core must stay cool and stable to win (D-COOL-003)"}
     },

@@ -7,7 +7,11 @@ extends ShipSystem
 ##     (D-MODE-003); red: core at least 75% (D-MODE-005), all backup impulse reactors at hot standby (D-MODE-008);
 ##   reduced power: warp core shut down when not at warp (D-MODE-011), main impulse at the minimum that covers
 ##     onboard use (D-MODE-012), auxiliary fusion kept off-line (D-MODE-013).
-## Shield, SIF and IDF generator counts follow the mode in their own systems.
+## Reduced power keeps the core when it is the last power source (D-MODE-011 exception). Yellow and red only raise
+## the core setpoint of a core that is already running; they never cold-start a core (start-up is the player's
+## sequence, see WarpCoreSystem). Shield, SIF and IDF generator counts follow the mode in their own systems.
+## Core ejection is manual only (a deliberate simplification of D-SAFE-003, D-SAFE-004 and D-SAFE-005; the
+## automatic part of D-SAFE-005 applies to the pod assembly, see FuelSystem).
 
 const ALERT_OF := {"cruise": "green", "yellow_alert": "yellow", "red_alert": "red", "reduced_power": "green"}
 const MODE_OF := {"green": "cruise", "yellow": "yellow_alert", "red": "red_alert"}
@@ -95,9 +99,22 @@ func _apply(first: bool) -> void:
 			rt.setpoints["aux_fusion_1"] = 0.0
 			rt.setpoints["aux_fusion_2"] = 0.0
 			var st: String = rt.comp("warp_core").get("state", "")
-			if rt.propulsion.warp <= 0.0 and ReactorFsm.SHUTDOWN_ALLOWED.has(st):
+			if rt.propulsion.warp > 0.0:
+				pass  # at warp: D-MODE-011 exception, the core stays up
+			elif _core_is_sole_source():
+				rt.event("core_kept", {"reason": "warp core is the only power source (D-MODE-011 exception)"})
+			elif ReactorFsm.SHUTDOWN_ALLOWED.has(st):
 				rt.cmd({"type": "reactor_shutdown", "target": "warp_core"})
 				rt.event("core_cold_shutdown", {"reason": "reduced power, not at warp (D-MODE-011)"})
+
+
+## True when no other producer can carry ship power: the core is the last power source.
+func _core_is_sole_source() -> bool:
+	for id: String in ["impulse_main", "impulse_saucer_1", "impulse_saucer_2", "aux_fusion_1", "aux_fusion_2"]:
+		var c: Dictionary = rt.comp(id)
+		if c.get("integrity", 0.0) > 0.0 and c.get("state", "") == "online" and rt.setpoints[id] * rt.scale_of(id) > 0.0:
+			return false
+	return true
 
 
 func _hot_standby(ids: Array) -> void:

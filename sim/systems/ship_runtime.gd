@@ -14,10 +14,11 @@ extends RefCounted
 ## The generic sim stores of tanks, pods and coolant keep their ship-file values; the live levels are in
 ## `ship.detail[id].level` (junction-like components carry no charge).
 ##
-## send(cmd) returns {accepted: bool, reason?: String, queued?: bool} at once. Commands the runtime cannot judge
+## send(cmd) rejects raw repair, damage and add_heat ("not a player command"); send_debug(cmd) accepts them (tests,
+## scenario set-up). start_scenario resets the ship in place. send(cmd) returns {accepted: bool, reason?: String, queued?: bool} at once. Commands the runtime cannot judge
 ## alone (value ranges the sim checks) are queued; a sim rejection arrives as a `rejected` event next tick.
 ## Generic sim commands (sim/core/sim.gd): set_allocation, set_priority, set_output (setpoint, see below),
-##   damage, repair, cut_conduit, restore_conduit, add_heat, reactor_start, reactor_online, reactor_shutdown,
+##   cut_conduit, restore_conduit, reactor_start, reactor_online, reactor_shutdown,
 ##   reactor_eject. set_demand is rejected for demands the systems manage. set_alert {value green|yellow|red} and
 ##   set_mode {value cruise|yellow_alert|red_alert|reduced_power} go through the alert system.
 ## set_output sets the SETPOINT of a producer; the ship applies setpoint x system scale factors (injector
@@ -82,38 +83,59 @@ static func create(ship_path: String, seed_value_in: int) -> ShipRuntime:
 static func create_from_data(raw_data: Dictionary, seed_value_in: int) -> ShipRuntime:
 	var r := ShipRuntime.new()
 	r.seed_value = seed_value_in
-	r.rng.seed = seed_value_in ^ 0x1701D
 	r.raw = raw_data
 	r.data = ShipData.flatten(raw_data)
-	r.sim = Sim.new(r.data, seed_value_in)
-	r.valid = r.sim.valid and r.data.has("systems")
-	r.errors = r.sim.errors.duplicate()
-	if not r.valid:
-		return r
-	for section: String in ShipLoader.SECTIONS:
-		for def: Dictionary in r.data.get(section, []):
-			r._defs[def["id"]] = def
-			if section == "producers":
-				r.setpoints[def["id"]] = float(def.get("output", def["max_output"]))
-	r._snap = r.sim.snapshot()
-	r.modes = ModeSystem.new()
-	r.warp = WarpCoreSystem.new()
-	r.fuel = FuelSystem.new()
-	r.coolant = CoolantSystem.new()
-	r.sif_idf = SifIdfSystem.new()
-	r.shields = ShieldSystem.new()
-	r.propulsion = PropulsionSystem.new()
-	r.dc = DamageControlSystem.new()
-	r.systems = [r.modes, r.warp, r.fuel, r.coolant, r.sif_idf, r.shields, r.propulsion, r.dc]
-	for s: ShipSystem in r.systems:
-		s.setup(r)
+	var probe := Sim.new(r.data, seed_value_in)
+	r.valid = probe.valid and r.data.has("systems")
+	r.errors = probe.errors.duplicate()
+	r.sim = probe
+	if r.valid:
+		r._build_state()
 	return r
+
+
+## (Re)builds the whole ship state from the ship data: sim, systems, setpoints, rng. Same object, same seed.
+func _build_state() -> void:
+	dispose()
+	rng = RandomNumberGenerator.new()
+	rng.seed = seed_value ^ 0x1701D
+	sim = Sim.new(data, seed_value)
+	tick = 0
+	destroyed = false
+	destroyed_reason = ""
+	ship_events = []
+	setpoints = {}
+	_defs = {}
+	_scales = {}
+	_sent_out = {}
+	_sent_demand = {}
+	_sent_priority = {}
+	managed_demands = {}
+	scenario = null
+	for section: String in ShipLoader.SECTIONS:
+		for def: Dictionary in data.get(section, []):
+			_defs[def["id"]] = def
+			if section == "producers":
+				setpoints[def["id"]] = float(def.get("output", def["max_output"]))
+	_snap = sim.snapshot()
+	modes = ModeSystem.new()
+	warp = WarpCoreSystem.new()
+	fuel = FuelSystem.new()
+	coolant = CoolantSystem.new()
+	sif_idf = SifIdfSystem.new()
+	shields = ShieldSystem.new()
+	propulsion = PropulsionSystem.new()
+	dc = DamageControlSystem.new()
+	systems = [modes, warp, fuel, coolant, sif_idf, shields, propulsion, dc]
+	for s: ShipSystem in systems:
+		s.setup(self)
 
 
 ## Breaks the reference cycles between the runtime and its systems; call when a run is finished.
 func dispose() -> void:
 	for s: ShipSystem in systems:
-		s.rt = null
+		if s != null:
+			s.rt = null
 	systems = []
 	scenario = null
 
@@ -261,16 +283,29 @@ func scenario_ids() -> Array:
 	return ScenarioRegistry.ids()
 
 
+## Resets the ship in place (same object and seed, state rebuilt from the ship file) and starts the scenario.
+## Returns false, touching nothing, for an unknown id or an invalid runtime.
 func start_scenario(id: String) -> bool:
+	if not valid:
+		return false
 	var sc := ScenarioRegistry.create(id)
 	if sc == null:
 		return false
+	_build_state()
 	scenario = sc
 	sc.setup(self)
 	return true
 
 
+## Player command entry. Raw repair, damage and add_heat are not player commands (use assign_team etc.).
 func send(c: Dictionary) -> Dictionary:
+	if ["repair", "damage", "add_heat"].has(c.get("type", null)):
+		return ShipSystem.no("%s is not a player command" % str(c["type"]))
+	return send_debug(c)
+
+
+## Same as send but also accepts raw repair, damage and add_heat. For tests and scenario setup only.
+func send_debug(c: Dictionary) -> Dictionary:
 	if not valid:
 		return ShipSystem.no("ship data invalid")
 	for s: ShipSystem in systems:
@@ -300,11 +335,13 @@ func _pass(c: Dictionary) -> Dictionary:
 			want = "conduit"
 	if want != "" and comp_kind != want:
 		return ShipSystem.no("target must be a " + want)
+	if ["set_allocation", "set_demand", "set_priority"].has(type) and not ShipSystem.finite(c.get("value", null)):
+		return ShipSystem.no("value must be a finite number")
 	if type == "set_demand" and managed_demands.has(id):
 		return ShipSystem.no("demand of %s is managed by the ship systems" % id)
 	if type == "set_output":
 		var v: Variant = c.get("value", null)
-		if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT or is_nan(float(v)) or is_inf(float(v)):
+		if not ShipSystem.finite(v):
 			return ShipSystem.no("value must be a finite number")
 		if float(v) < 0.0 or float(v) > float(_defs[id]["max_output"]):
 			return ShipSystem.no("output must be within 0..max_output")

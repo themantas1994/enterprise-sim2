@@ -20,7 +20,7 @@ func test_a_leak_drains_the_loop_and_isolation_stops_it() -> void:
 	_rt = H.make()
 	H.run(_rt, 5)
 	assert_float(_cool()["coolant_core"]["level"]).is_equal(100.0)
-	_rt.send({"type": "damage", "target": "coolant_core", "amount": 50})
+	_rt.send_debug({"type": "damage", "target": "coolant_core", "amount": 50})
 	H.run(_rt, 100)
 	var lvl: float = _cool()["coolant_core"]["level"]
 	assert_float(lvl).is_less(100.0)
@@ -37,7 +37,7 @@ func test_a_drained_core_loop_overheats_the_core_and_a_full_one_does_not() -> vo
 	_rt.send({"type": "set_alert", "value": "red"})
 	H.run(_rt, 300)
 	var t_ok: float = H.comp(_rt, "warp_core")["temp"]
-	_rt.send({"type": "damage", "target": "coolant_core", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "coolant_core", "amount": 100})
 	H.run(_rt, 400)
 	var t_hot: float = H.comp(_rt, "warp_core")["temp"]
 	assert_float(_cool()["coolant_core"]["level"]).is_equal_approx(0.0, 0.001)
@@ -46,9 +46,9 @@ func test_a_drained_core_loop_overheats_the_core_and_a_full_one_does_not() -> vo
 
 func test_refill_moves_reserve_into_the_loop() -> void:
 	_rt = H.make()
-	_rt.send({"type": "damage", "target": "coolant_core", "amount": 60})
+	_rt.send_debug({"type": "damage", "target": "coolant_core", "amount": 60})
 	H.run(_rt, 150)
-	_rt.send({"type": "repair", "target": "coolant_core"})
+	_rt.send_debug({"type": "repair", "target": "coolant_core"})
 	var low: float = _cool()["coolant_core"]["level"]
 	var reserve: float = _cool()["reserve"]
 	_rt.send({"type": "coolant_refill", "target": "coolant_core", "value": true})
@@ -65,7 +65,7 @@ func test_eps_loop_leak_overheats_the_busiest_conduit_compared_with_a_healthy_lo
 		var rt := H.make()
 		rt.send({"type": "set_alert", "value": "red"})
 		if leak:
-			rt.send({"type": "damage", "target": "coolant_eps", "amount": 100})
+			rt.send_debug({"type": "damage", "target": "coolant_eps", "amount": 100})
 		H.run(rt, 600)
 		integrity.append(rt.snapshot()["components"]["eps_sub_saucer"]["integrity"])
 		if leak:
@@ -112,7 +112,7 @@ func test_pod_containment_needs_power_and_collapses_into_automatic_ejection() ->
 	_rt = H.make()
 	H.run(_rt, 10)
 	assert_float(_rt.snapshot()["ship"]["fuel"]["containment"]).is_equal(1.0)
-	_rt.send({"type": "damage", "target": "antimatter_containment", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "antimatter_containment", "amount": 100})
 	H.run(_rt, 400)
 	var c: float = _rt.snapshot()["ship"]["fuel"]["containment"]
 	assert_float(c).is_less(0.9)
@@ -125,7 +125,7 @@ func test_pod_containment_needs_power_and_collapses_into_automatic_ejection() ->
 
 func test_a_leaking_pod_loses_antimatter() -> void:
 	_rt = H.make()
-	_rt.send({"type": "damage", "target": "antimatter_pod_07", "amount": 100})
+	_rt.send_debug({"type": "damage", "target": "antimatter_pod_07", "amount": 100})
 	H.run(_rt, 50)
 	assert_float(_rt.snapshot()["ship"]["detail"]["antimatter_pod_07"]["level"]).is_less(95.0)
 	assert_float(_rt.snapshot()["ship"]["detail"]["antimatter_pod_08"]["level"]).is_greater(99.9)
@@ -134,10 +134,11 @@ func test_a_leaking_pod_loses_antimatter() -> void:
 func test_antimatter_generator_makes_antimatter_from_deuterium_at_ten_to_one() -> void:
 	_rt = H.make()
 	_rt.fuel.set_level("antimatter_pod_01", 50.0)
-	H.run(_rt, 3)
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 0})  # no antimatter burn, so only the generator changes the pods
+	H.run(_rt, 10)
 	var f0: Dictionary = _rt.snapshot()["ship"]["fuel"]
 	assert_bool(H.accepted(_rt, {"type": "antimatter_generator_set", "value": true})).is_true()
-	H.run(_rt, 4)
+	H.run(_rt, 6)
 	var f1: Dictionary = _rt.snapshot()["ship"]["fuel"]
 	var d_am: float = f1["antimatter_m3"] - f0["antimatter_m3"]
 	assert_float(d_am).is_greater(0.0)
