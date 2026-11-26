@@ -4,9 +4,13 @@ config_version=5
 [application]
 
 config/name="Enterprise Engineering Simulator 2"
-run/main_scene="res://ui/panels/empty_panel.tscn"
+run/main_scene="res://ui/main.tscn"
 config/icon="res://icon.svg"
 config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[autoload]
+
+SimHost="*res://ui/sim_host.gd"
 
 [display]
 
