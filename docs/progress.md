@@ -247,3 +247,59 @@ Not verified: the Android emulator smoke test (no /dev/kvm, no emulator binary);
 ### Plan check
 
 Orson sonnet/high confirmed at session start. Spawns match the agent plan table (Iris sonnet/medium, Lyra sonnet/medium, Greta sonnet/high). Mismatches: (1) Lyra and Greta ran as `general-purpose` because `implementer` and `reviewer` are not available; (2) Kit (K3), Mae (M2) and Nell (S1) were planned and not spawned, for the reasons in the log; (3) Lyra was resumed once for the fix round, beyond the plan; (4) the Phase 3 backlog was not touched (no readable copy).
+
+## Phase 4b/5: NCC-1701-A and NCC-1701-E (2026-11-26): both tracks stopped after the source investigation
+
+Goal: finish milestone 4 (1701-A: ship data, panels, 3 scenarios) and build milestone 5 (1701-E: ship data, late-LCARS
+kit, panels, 3 scenarios), under the source rule in docs/sources.md (every Star Trek value found and confirmed canon
+in an official source first).
+
+Status: NOT built. Step 2 (source investigation) found no scenario of either ship with all its systems covered by a
+readable source, so the stop rule applied to both tracks: only the two search reports and this entry are committed.
+No change to ships/, sim/, ui/ or tests/.
+
+Orson's session check at start: `get_session` reported model claude-sonnet-5-5, effort high. The working branch was at the
+Phase 1 commit; it was fast-forwarded to `main` (ba99356, Phase 4 merged) before any work. Base commit for the track diffs: ba99356.
+
+Inputs used: the manuals folder in the private config repo was empty (only placeholder files, index says nothing supplied),
+so no book was readable. The prompt's input fields were unfilled placeholders, so defaults were used: scenarios as in the
+plan; impulse rule held (not confirmed, not approved; the phaser half A-PHAS-001 stays usable); -E structure reuses the -D
+only where an -E source says so; the 1701-D backlog left alone (rows D-EPS-001..003, D-CORE-004, D-IMP-009, D-IMP-010,
+D-COOL-003, D-DMG-001, D-IMP-004 stay estimates or unverified; the 1701-D ship data is unchanged).
+
+### Spawn log
+
+One line per spawned worker: agent, task, model, effort, result.
+
+| agent | task | model | effort | result |
+|---|---|---|---|---|
+| Iris (books) | books and official text for the held 1701-A values and the 1701-E systems: titles, editions, ISBNs, access status, value-to-source map (read-only) | sonnet | medium | 11 sources catalogued; 0 books readable (no supplied copy, lending-restricted or no preview); 2 StarTrek.com pages readable with no systems values; ISBN conflict for Mr. Scott's Guide noted |
+| Iris (canon) | on-screen canon: new scenes for TMP to TUC and FC, INS, NEM, second reading per scene (read-only) | sonnet | medium | about 20 new 1701/1701-A rows and 26 FOUND plus 4 partial 1701-E rows from two transcript readings; film not viewed, no timestamps; 5 disagreements recorded |
+| Orson (inline) | merged both reports into docs/decisions/1701a-source-search.md and 1701e-source-search.md; stop-rule decision | sonnet | high | both tracks stop; docs-only commit |
+| Kit, Lyra, Mae, Greta, Nell (Tracks A and E) | not spawned | n/a | n/a | held by the stop rule: no ship data can be sourced |
+
+### Notes
+
+- Agent types: `implementer` and `reviewer` were not needed; both workers ran as `general-purpose` with the planned model and effort.
+- Source gate result: no new ledger rows (R1 not run; the ledger changes only when a source has been read). The scene findings are in the two search reports under search ids (A-SRCH-n, E-SRCH-n).
+- Held (needs a readable copy): 1701-A reactor and intermix layout, outputs, impulse, phaser, torpedo, shield and deflector data, fuel, batteries, life support, damage control, green alert; 1701-E warp core and its override, EPS, impulse, shields and armour behaviour, deflector, weapons, life support, damage control, computer, Main Engineering layout, alerts.
+- Owner decisions still open: impulse rule (keep as a gameplay rule recorded as a design decision, drop, or source it); manual-restart procedure and numeric outputs for the -A; metaphasic effects on ship systems, armour behaviour and the -E structure choice; the disagreements listed in the two reports.
+- PLAN.md was not updated (the stop rule limits this commit to the reports and this entry). Its -E line "more values will be marked estimate" is withdrawn by the source rule; milestone lines 4 and 5 and the sources note should be revised when a track builds.
+
+### Verification (run 2026-11-26 by the main session)
+
+Each step ran with `set -o pipefail` and its real exit status.
+
+| step | exit |
+|---|---|
+| scripts/check_sim_purity.sh | 0 |
+| scripts/check_ship_sources.py (ships/1701d.json) | 0 |
+| scripts/selftest_checks.sh | 0 |
+
+Not run: scripts/run_tests.sh and the Godot install (the commit changes only docs, no code or data; the 189 test cases of
+Phase 4 are unchanged); the GitHub Actions run on the PR (see the PR for its status). No scenario, panel, ship file or
+screenshot exists for either ship, so nothing about them is verified.
+
+### Plan check
+
+Orson sonnet/high confirmed at session start. The two Iris workers ran at sonnet/medium, matching the agent plan table. Mismatches: (1) the workers ran as `general-purpose` as planned for Iris; no `implementer` or `reviewer` types were used; (2) Kit, Lyra, Mae, Greta and Nell were planned for Tracks A and E and not spawned (stop rule); (3) the Android emulator and all build steps are not applicable.
