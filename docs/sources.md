@@ -14,8 +14,18 @@ Code, ship data and tests cite ledger ids (for example `D-WARP-004`) instead of 
 - Paraphrase only. Never copy book text or images into the repository.
 - `id` format: `<SHIP>-<SYSTEM>-<NNN>` for ship values (`D` = 1701-D, `A` = 1701-A, `E` = 1701-E) and
   `ENG-<TOPIC>-<NNN>` for engine and platform facts.
-- `status`: `verified` (checked against the cited source), `estimate` (no official source; say why in
+- `status`: `verified` (checked against the cited source), `estimate` (game-tuning constant only; say why in
   `meaning`), `unverified` (recorded but not yet checked).
+- Source rule from the 1701-A phase on: a Star Trek value (number, component name, behaviour, count, deck,
+  timing) must be found and confirmed canon in an official source before ship data, panels or scenarios use
+  it. The ledger cites the primary source (book and section, or film and scene, or StarTrek.com), never Memory
+  Alpha. `estimate` is for game-tuning constants that are not Star Trek facts (heat rates, countdown lengths,
+  scenario thresholds, repair times, UI scales), each with its reason. A Star Trek fact is never left as
+  `estimate`; if its source cannot be read (lending-restricted, login wall, no text copy) the value is not
+  recorded and the owner of the ship data is asked for a readable copy. Access limits are never bypassed.
+- A source that was read and states no figure for a quantity is recorded as a `verified` row whose value is
+  "not stated" (with the book and section read). The game-scale number that then has to exist is a
+  separate `estimate` tuning row.
 - `verified_by`: who or what checked the value against the source, and how.
 
 ## Ledger
