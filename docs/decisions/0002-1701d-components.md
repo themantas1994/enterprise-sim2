@@ -38,7 +38,7 @@ conflict in two lines instead of diverging silently, and this file is amended.
 | other loads | `nav_deflector`, `phaser_array`, `life_support` (estimate), `computer_core_p1`, `computer_core_p2`, `computer_core_e1` | D-NAVD-*, D-PHAS-*, D-COMP-* |
 | damage control | `dc_team_1`..`dc_team_4` | D-DMG-001 |
 
-Topology requirements (Kit decides the rest): both trunks can feed the main loads; `eps_cross_link` joins the
+Topology requirements (the ship data owner decides the rest): both trunks can feed the main loads; `eps_cross_link` joins the
 trunks so that a cut of one trunk leaves a path for essential loads; the saucer impulse reactors and the
 auxiliary generators can power the saucer submaster alone. The core solver is a greedy priority allocator, not
 a max-flow: if this graph needs better routing, report it; do not rewrite the solver.
@@ -59,10 +59,10 @@ Panel ids are the keys of the panel map; the station menu shows them in this ord
 | `damage_control` | `dc_team_1`..`dc_team_4`, plus every damaged id of the map (repair queue) |
 
 The commands each panel sends (power allocation, priorities, reactor start, eject, frequency and modulation,
-team assignment) are the generic commands of `sim/core/sim.gd` plus any ship command Kit adds in
-`sim/systems`; Kit documents each in the header of `sim/systems/ship_runtime.gd`.
+team assignment) are the generic commands of `sim/core/sim.gd` plus any ship command added in
+`sim/systems`; each is documented in the header of `sim/systems/ship_runtime.gd`.
 
-## Runtime wrapper and scenario interface (Kit builds, Lyra consumes)
+## Runtime wrapper and scenario interface (built by the systems side, consumed by the UI)
 
 `sim/systems/ship_runtime.gd`, class `ShipRuntime` (RefCounted), the only object the host talks to:
 
@@ -81,7 +81,7 @@ team assignment) are the generic commands of `sim/core/sim.gd` plus any ship com
 `update(runtime)`, called once per tick until `status` leaves `running`, after which the status is final.
 `sim/scenarios/scenario_registry.gd`: `ids()` and `create(id)`. One class per scenario:
 
-| id | file | intent (details and thresholds are Kit's, all tuning marked `estimate`) |
+| id | file | intent (details and thresholds belong to the systems author, all tuning marked `estimate`) |
 |---|---|---|
 | `core_breach` | `scenario_core_breach.gd` | containment fails; the player must eject, contain (forcefield) or stabilise before the countdown ends (D-SAFE-003, D-SAFE-004, D-ENG-007, D-CORE-001..005); lost on breach |
 | `borg_drain` | `scenario_borg_drain.gd` | a cube drains shields and adapts to the frequency in use; the player rotates frequency and modulation, reroutes power and keeps the ship alive until the timer ends (D-BORG-001..003, D-SHLD-018, D-SHLD-019); lost when shields and power collapse. The drain of ship power itself is a gameplay invention (D-BORG-004, estimate) |
