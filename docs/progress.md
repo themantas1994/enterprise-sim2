@@ -135,7 +135,8 @@ One line per spawned worker: agent, task, model, effort, result.
 | Nell (S1), stand-in | realism review | sonnet | high | 1 high (shield level below Alert minimum), 4 medium, 8 low, read-only (Godot not run); 12 acted on, 3 documented as simplifications |
 | Kit (K3 fixes) | confirmed findings from Greta and Nell, tests first (same worker resumed) | sonnet | medium | 158 cases; send() rejects raw repair, damage, add_heat; scenario start resets the ship in place; shield level 0.85..1; per-hull SIF/IDF rule |
 | Lyra (L1 fixes) | confirmed UI findings (same worker resumed) | sonnet | medium | ship-command controls on every panel, layout fixes, SimHost validity and dispose, UI-driven win tests for all 3 scenarios; 173 cases |
-| Mae (M2 re-run) | second QA pass and new screenshots (same worker resumed) | sonnet | medium | see Verification |
+| Mae (M2 re-run) | second QA pass and new screenshots (same worker resumed) | sonnet | medium | 173 cases twice, 0 failures; all 3 scenarios lost with no input and a second scenario starts on a healthy ship; every new ship command accepted, raw repair/damage/add_heat rejected; APK builds (57.2 MB); emulator not verified; 3 low layout leftovers |
+| Lyra (L1 layout round) | untruncated captions, text floor, re-shot screenshots (same worker resumed) | sonnet | medium | 174 cases; truncation and text-floor tests added; 18 screenshots re-shot and viewed |
 
 ### Notes
 
@@ -148,3 +149,40 @@ One line per spawned worker: agent, task, model, effort, result.
 - Documented simplifications: core ejection is manual only (D-SAFE-003..005); no shield backup service timer (D-SHLD-009); Borg shield adaptation is a gameplay mapping of D-BORG-001/002 and the power drain is a gameplay invention (D-BORG-004, estimate); Separated Flight and diagnostics (D-MODE-009/010, D-DIAG) are not modelled; runtime and system state have no save/load.
 - Open: theme is built once at startup (no rebuild on window resize or rotation); tank fill bars scale against the highest level seen because the snapshot has no tank capacity; the Android emulator smoke test is not verified.
 - Repo hygiene: the existing Phase 1 convention names agents in this file and in the `verified_by` column of older ledger rows; no new file outside this log names an agent, memory or the config repo.
+
+### Verification (run 2026-11-25 and 2026-11-26 by the main session on the merged tree)
+
+Each step ran with `set -o pipefail`, its own log, and its real exit status.
+
+| step | exit |
+|---|---|
+| install Godot 4.7.2, GdUnit4 (pinned) | 0 / 0 |
+| scripts/check_sim_purity.sh | 0 |
+| scripts/check_ship_sources.py (ships/1701d.json) | 0 |
+| scripts/selftest_checks.sh | 0 |
+| scripts/run_tests.sh: 174 test cases, 0 errors, 0 failures, 0 orphans | 0 |
+| QA: scripts/run_tests.sh twice, same counts (173 cases at the time) | 0 / 0 |
+| QA: main scene with the real runtime, 300 ticks, no errors | 0 |
+| QA: scripts/export.sh android debug (APK 57,212,892 B) | 0 |
+
+Test growth: 45 cases before the phase; 141 after the first merge; 158 after the runtime fixes; 174 final.
+Scenario win and loss paths are tested headless by command (tests/scenarios) and by panel buttons (tests/ui).
+Screenshots: docs/screens/1701d/ (station menu and 8 panels, each at 1280x720 and phone landscape 2160x1080 px
+at 402 dpi, 864x432 dp, with a UiScale override because xvfb has no 402 dpi). All 18 were looked at; the only
+truncated text left is the scenario title in the phone status strip.
+
+Not verified: the Android emulator smoke test (no /dev/kvm, no emulator binary, no system image in the
+container; the APK was built but never installed or run); the GitHub Actions run on the PR (see the PR for its
+status); the Windows export was not run on a real Windows machine; the manual-derived values listed in the notes
+are estimates; the 3 "decode Variant" error lines in the test log come from a deliberate bad-data from_save test
+and do not fail the suite.
+
+### Plan check
+
+Orson sonnet/high confirmed at session start. Spawns match the agent plan table (Iris sonnet/medium, Kit
+sonnet/medium, Lyra sonnet/medium, Mae sonnet/medium, Greta sonnet/high) with these mismatches: (1) Kit, Lyra,
+Greta and Nell ran as `general-purpose` because `implementer` and `reviewer` are not available in this session;
+(2) Nell is planned as fable/high, her fable run failed on an API usage-credit error and the review ran on
+sonnet/high instead; (3) spawns beyond the plan: Kit, Lyra and Mae were each resumed for fix rounds, Lyra twice;
+(4) Iris could not source four value groups, so the main session wrote the estimate rows; (5) Lyra was hired for
+this phase (roster entry in the config repo).
