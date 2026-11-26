@@ -186,3 +186,64 @@ Greta and Nell ran as `general-purpose` because `implementer` and `reviewer` are
 sonnet/high instead; (3) spawns beyond the plan: Kit, Lyra and Mae were each resumed for fix rounds, Lyra twice;
 (4) Iris could not source four value groups, so the main session wrote the estimate rows; (5) Lyra was hired for
 this phase (roster entry in the config repo).
+
+## Phase 4: NCC-1701-A (2026-11-26): partial, ship data held
+
+Goal (PLAN.md section 8, milestone 4): the NCC-1701-A playable: ship data, film-era (tmp) widget kit with CRT
+shader, panels and 3 scenarios (intermix imbalance, emergency manual restart, battle damage with the warp-fed
+phaser rule). Accept: each scenario won and lost by command and by panel buttons; panels readable at 1280x720 and
+on a 6-inch phone; all CI jobs green.
+
+Status: NOT met. Under the new source rule (docs/sources.md, Rules) no Star Trek ship value may be used until it is
+found and confirmed canon. The three 1701-A books could not be read, so ship data, panels and scenarios are held
+and not built. Only the parts that use no ship value were built: the film-era kit and the CRT shader.
+
+Orson's session check at start: `get_session` reported model claude-sonnet-5-5, effort high. The working branch was
+at the Phase 1 commit; it was fast-forwarded to `main` (Phases 2 and 3 merged) before any work.
+
+### Spawn log
+
+One line per spawned worker: agent, task, model, effort, result.
+
+| agent | task | model | effort | result |
+|---|---|---|---|---|
+| Iris (R1) | 1701-A source gate: ship values, 3 scenarios, font, Godot Compatibility facts | sonnet | medium | 45 rows: 3 scenarios, phaser/shield/torpedo/power/alert film rows, Exo 2 font (ENG-FONT-006..008), Godot rows (ENG-GODOT-019..022). All three books unreadable (lending-restricted, HTTP 401, or no copy online); StarTrek.com has no text; nothing bypassed; every book-only value NOT RECORDED |
+| Orson (inline) | source rule in the ledger, ADR 0003 (partial contract), refit labels and transcript note after review | sonnet | high | ADR 0003 written before Lyra started; held systems listed in it |
+| Lyra (L1) | tmp widget kit, Exo 2 font, CRT shader, kit gallery, tests, Compatibility screenshots (no panels) | sonnet | medium | 12 widget files, shader, gallery, 9 tests; font checksums match the ledger; 183 cases |
+| Greta (G1) | review of `git diff origin/main...HEAD` | sonnet | high | 3 medium, 5 low; 8 of 8 film rows spot-checked match; all confirmed except two items left as documented (see notes) |
+| Lyra (L1 fixes) | confirmed G1 findings (same worker resumed) | sonnet | medium | BackBufferCopy per overlay, drawn-size text-floor tests for all widgets, resize handling, token and banner fixes; 189 cases |
+| Kit (K3) | not spawned | n/a | n/a | held: no confirmed canon for any ship system |
+| Mae (M2) | not spawned | n/a | n/a | held: no panels to screenshot; emulator not possible here (no /dev/kvm, no emulator) |
+| Nell (S1) | not spawned | n/a | n/a | held: no ships/1701a.json or 1701-A systems to review |
+
+### Notes
+
+- Agent types: `implementer` and `reviewer` are not available in this session, so Lyra and Greta ran as `general-purpose` with the planned model and effort (same mismatch as Phases 1 to 3).
+- Source gate result: values RECORDED: phaser power through the main engines and cut off in an imbalance (A-PHAS-001), shield lower and re-raise time (A-SHLD-004), the wormhole, manual restart and Reliant battle sequences (A-SCN1/2/3-*), alert sequences, auxiliary power sequences. NOT RECORDED (books only): reactor layout, intermix chamber and shaft, dilithium frame role, reactor output, nacelle and conduit counts, reactor procedures; impulse engine count, location, output; phaser bank count, locations, output; torpedo tube count and stowage; shield layout, facings, output; navigational deflector location and rating; deuterium and antimatter storage, dilithium reserve; battery capacity; life support and gravity; damage control parties; green alert rule.
+- The impulse half of the project rule ("phasers and impulse lose power when the warp reactor is in trouble") has no primary support: TMP shows phaser power cut in an imbalance while impulse stays usable (A-IMP-001); TWOK ties impulse only to restored auxiliary power (A-IMP-002). The phaser half is confirmed (A-PHAS-001). Needs the owner's decision or a book.
+- Film rows were read from public fan-made transcripts (film not viewed, no timestamps); TMP, TWOK and TSFS rows show the refit NCC-1701 and say so; that the 1701-A carries the same design is a project assumption.
+- G1 findings: fixed: overlays sharing the screen copy (BackBufferCopy per overlay; copy mode is viewport because rect mode rendered black on Compatibility under software GL), text-floor tests that did not pin the drawn sizes, stale scanline period after resize, weak shader and determinism tests, font cache, banner overdraw, missing refit labels in the ledger, transcript not named. Left as is: `TmpTokens.fit()` with width 0 or less returns the text uncut (same as the 1701-D kit, only at absurd widths).
+- CRT shader on Compatibility: drawn correctly in a Linux software-GL run (gl_compatibility); Windows and Android Compatibility not run. Flicker not judged in motion. Headless tests cannot show the BackBufferCopy refreshing the screen texture; the screenshots do.
+- Phase 3 backlog (1701-D rows D-EPS-001..003, D-CORE-004, D-IMP-009, D-IMP-010, D-COOL-003, D-DMG-001, D-IMP-004): no readable copy of the TNG Technical Manual was supplied, so they stay estimates or unverified and the 1701-D ship data is unchanged.
+- No sim/core change, no change to ships/.
+
+### Verification (run 2026-11-26 by the main session on the final tree)
+
+Each step ran with `set -o pipefail`, its own log, and its real exit status.
+
+| step | exit |
+|---|---|
+| install Godot 4.7.2, GdUnit4 v6.2.3 (pinned) | 0 / 0 |
+| scripts/check_sim_purity.sh | 0 |
+| scripts/selftest_checks.sh | 0 |
+| scripts/check_ship_sources.py (ships/1701d.json) | 0 |
+| scripts/run_tests.sh: 189 test cases (174 before the phase), 0 errors, 0 failures, 0 orphans | 0 |
+| headless project start, `--quit-after 30`, 0 ERROR lines (run by the UI worker) | 0 |
+
+Screenshots: docs/screens/1701a/ (kit gallery at 1280x720 and phone landscape 2160x1080 px at 402 dpi, 864x432 dp with a UiScale override); both viewed.
+
+Not verified: the Android emulator smoke test (no /dev/kvm, no emulator binary); Windows and Android rendering of the CRT shader; the GitHub Actions run on the PR (see the PR for its status); everything about the 1701-A ship data, panels and scenarios, which are not built.
+
+### Plan check
+
+Orson sonnet/high confirmed at session start. Spawns match the agent plan table (Iris sonnet/medium, Lyra sonnet/medium, Greta sonnet/high). Mismatches: (1) Lyra and Greta ran as `general-purpose` because `implementer` and `reviewer` are not available; (2) Kit (K3), Mae (M2) and Nell (S1) were planned and not spawned, for the reasons in the log; (3) Lyra was resumed once for the fix round, beyond the plan; (4) the Phase 3 backlog was not touched (no readable copy).
