@@ -1,13 +1,13 @@
 class_name TmpKitGallery
 extends Control
 ## Gallery of the film-era kit for tests and screenshots: every widget in several states, with the CRT overlay
-## on one region (the schematic column). Placeholder labels only. It reads no ship data, does not use the simulation host
+## on two separate regions (the line-art column). Placeholder labels only. It reads no ship data, does not use the simulation host
 ## and is not part of the main scene.
 
 var kit := TmpKit.new()
 var reduced_motion := false
 var banners: Array[AlertBanner] = []
-var _crt: ColorRect
+var _crts: Array[ColorRect] = []
 
 
 func _ready() -> void:
@@ -33,19 +33,24 @@ func _ready() -> void:
 		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		col.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		cols.add_child(col)
-	_crt = TmpCrt.find_overlay(self)
+	_crts = TmpCrt.find_overlays(self)
 	set_reduced_motion(reduced_motion)
 
 
+## The first CRT overlay (the gallery has two regions: see crt_overlays()).
 func crt_overlay() -> ColorRect:
-	return _crt
+	return _crts[0] if not _crts.is_empty() else null
+
+
+func crt_overlays() -> Array[ColorRect]:
+	return _crts
 
 
 ## Reduced motion: the CRT flicker and the banner blinking stop.
 func set_reduced_motion(on: bool) -> void:
 	reduced_motion = on
-	if _crt != null:
-		TmpCrt.set_reduced_motion(_crt, on)
+	for o in _crts:
+		TmpCrt.set_reduced_motion(o, on)
 	for b in banners:
 		b.reduced_motion = on
 
@@ -137,11 +142,13 @@ func _trace_column() -> Control:
 	blue.trace = "blue"
 	blue.set_groups([{"title": "Group two", "ids": ["b1"]}])
 	blue.set_node("b1", "Node 3", "IDLE", UiStatus.INFO, -1.0, false)
-	box.add_child(green)
-	box.add_child(blue)
-	var region := TmpCrt.wrap(box, reduced_motion)
-	region.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	f.body.add_child(region)
+	# Two separate CRT regions: each has its own BackBufferCopy, so both read a fresh screen copy.
+	var region_a := TmpCrt.wrap(green, reduced_motion)
+	var region_b := TmpCrt.wrap(blue, reduced_motion)
+	region_b.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(region_a)
+	box.add_child(region_b)
+	f.body.add_child(box)
 	var s2 := kit.slider()
 	s2.setup_display("Trim", 100.0, 0, " PCT")
 	s2.value = 0.2

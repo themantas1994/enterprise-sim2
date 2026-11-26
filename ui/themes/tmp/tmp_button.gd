@@ -67,6 +67,11 @@ func set_caption(main: String, sub: String = "") -> void:
 	_grow_to_fit()
 
 
+func set_fill(value: float) -> void:
+	super.set_fill(value)
+	_grow_to_fit()
+
+
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	var down := button_pressed or is_pressed()

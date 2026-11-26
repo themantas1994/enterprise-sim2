@@ -5,6 +5,15 @@ extends AlertBanner
 ## slow, red fast. The plate dims (not blanks) in the off phase so the text stays readable.
 
 
+func _init() -> void:
+	super._init()
+	clip_contents = true   # the hazard teeth may reach past the right edge by up to one tooth
+
+
+func drawn_font_sizes() -> Array:
+	return [_layout()["fs"]]
+
+
 func _layout() -> Dictionary:
 	var h := size.y
 	var fs := maxi(TmpTokens.min_font(), int(h * 0.5))

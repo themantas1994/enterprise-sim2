@@ -66,25 +66,27 @@ static func baseline(font: Font, fs: int, cy: float) -> float:
 	return cy + (font.get_ascent(fs) - font.get_descent(fs)) * 0.5
 
 
+## The font at `path`, or null when it cannot be loaded (the caller then uses the engine fallback without
+## remembering it, so a later call can still load the real font).
 static func _load_font(path: String) -> Font:
 	if ResourceLoader.exists(path):
 		var f: Variant = load(path)
 		if f is Font:
 			return f
-	return ThemeDB.fallback_font
+	return null
 
 
 ## Exo 2 Regular (ENG-FONT-006..008). Falls back to the engine default font when the file cannot be loaded.
 static func font() -> Font:
 	if _regular == null:
 		_regular = _load_font(FONT_REGULAR_PATH)
-	return _regular
+	return _regular if _regular != null else ThemeDB.fallback_font
 
 
 static func font_bold() -> Font:
 	if _bold == null:
 		_bold = _load_font(FONT_BOLD_PATH)
-	return _bold
+	return _bold if _bold != null else ThemeDB.fallback_font
 
 
 ## Raised (or, when `pressed`, sunk) bevel along the edges of `r`: light top and left, dark bottom and right.

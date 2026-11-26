@@ -21,6 +21,10 @@ func _title_layout() -> Dictionary:
 	return {"font": font, "fs": fs, "text": TmpTokens.fit(font, title, fs, avail)}
 
 
+func drawn_font_sizes() -> Array:
+	return [_title_layout()["fs"]]
+
+
 func is_truncated() -> bool:
 	return _title_layout()["text"] != title
 

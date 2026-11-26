@@ -26,6 +26,10 @@ func _layout() -> Dictionary:
 		"value": TmpTokens.fit(bold, value_text, fs, value_w - win_pad * 2.0)}
 
 
+func drawn_font_sizes() -> Array:
+	return [_layout()["fs"]]
+
+
 func is_truncated() -> bool:
 	var l := _layout()
 	return l["label"] != label or l["value"] != value_text

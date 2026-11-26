@@ -75,13 +75,15 @@ func test_font_files_match_the_ledger_and_load_through_the_theme() -> void:
 	assert_bool(t.get_font("font", "Label") == TmpTokens.font()).is_true()
 
 
-func test_shader_compiles_and_has_the_uniforms() -> void:
+func test_shader_uniform_list_and_required_builtins_parse() -> void:
+	# Headless runs use the dummy renderer: this checks that the shader source parses (the uniform list comes
+	# from the parser) and names the required built-ins. Drawing is checked by the Compatibility screenshot run.
 	var sh := TmpCrt.shader()
 	assert_object(sh).is_not_null()
 	assert_int(sh.get_mode()).is_equal(Shader.MODE_CANVAS_ITEM)
 	var names: Array = sh.get_shader_uniform_list().map(func(u: Dictionary) -> String: return u["name"])
 	for u: String in TmpCrt.UNIFORMS:
-		assert_bool(names.has(u) or sh.code.contains("uniform float %s" % u) or sh.code.contains("uniform bool %s" % u)).override_failure_message("uniform " + u).is_true()
+		assert_bool(names.has(u)).override_failure_message("uniform " + u).is_true()
 	assert_bool(sh.code.contains("hint_screen_texture")).is_true()
 	assert_bool(sh.code.contains("SCREEN_UV") and sh.code.contains("FRAGCOORD") and sh.code.contains("TIME")).is_true()
 	assert_bool(sh.code.contains("SCREEN_TEXTURE")).is_false()
@@ -105,29 +107,87 @@ func test_touch_targets_are_at_least_48_dp_at_both_sizes() -> void:
 	await get_tree().process_frame
 
 
-func test_no_caption_is_cut_and_no_text_is_below_the_floor_at_both_sizes() -> void:
+const DRAWN_TYPES := ["TmpButton", "TmpFrame", "TmpAlertBanner", "TmpBarGauge", "TmpReadout", "TmpSlider"]
+
+
+## Text drawn smaller than `floor_size`, from what the widgets draw (drawn_font_sizes), plus cut captions.
+## Returns {"small": [descriptions], "cut": [descriptions], "types": {class name: count checked}}.
+func _text_report(root: Node, floor_size: float, key: String) -> Dictionary:
+	var out := {"small": [], "cut": [], "types": {}, "small_types": {}}
+	for n: Node in _all_nodes(root):
+		if not (n is Control) or not (n as Control).is_visible_in_tree():
+			continue
+		var where := "%s @ %s" % [n.get_path(), key]
+		if n.has_method("drawn_font_sizes"):
+			var tname: String = n.get_script().get_global_name()
+			out["types"][tname] = int(out["types"].get(tname, 0)) + 1
+			for fs: int in n.drawn_font_sizes():
+				if float(fs) < floor_size:
+					out["small"].append("%s: %d" % [where, fs])
+					out["small_types"][tname] = true
+		if n.has_method("is_truncated") and n.is_truncated():
+			out["cut"].append(where)
+		elif n is Label and float(n.get_theme_font_size("font_size", "Label")) < floor_size:
+			out["small"].append("%s: label" % where)
+	return out
+
+
+func test_no_caption_is_cut_and_no_drawn_text_is_below_the_floor_at_both_sizes() -> void:
 	for key: String in F.SIZES:
 		var m := await _mount(key)
-		var floor_size := UiScale.dp(12.0)
-		var checked := 0
-		for n: Node in _all_nodes(m[0]):
-			if not (n is Control) or not (n as Control).is_visible_in_tree():
-				continue
-			var where := "%s @ %s" % [n.get_path(), key]
-			if n is PanelButton:
-				checked += 1
-				assert_bool(n.is_truncated()).override_failure_message("truncated " + where).is_false()
-				for fs: int in n.drawn_font_sizes():
-					assert_bool(float(fs) >= floor_size).override_failure_message("small text %s: %d" % [where, fs]).is_true()
-			elif n is Label or n is Readout or n is BarGauge or n is TmpSlider or n is TmpFrame or n is TmpAlertBanner:
-				checked += 1
-				if n.has_method("is_truncated"):
-					assert_bool(n.is_truncated()).override_failure_message("truncated " + where).is_false()
-				assert_bool(float(n.get_theme_font_size("font_size", "Label")) >= floor_size).override_failure_message("small text " + where).is_true()
-		assert_bool(checked >= 20).is_true()
-		assert_int(TmpTokens.min_font()).is_greater_equal(int(floor_size))
+		var rep := _text_report(m[0], UiScale.dp(12.0), key)
+		assert_array(rep["small"]).is_empty()
+		assert_array(rep["cut"]).is_empty()
+		for t: String in DRAWN_TYPES:
+			assert_bool(int(rep["types"].get(t, 0)) > 0).override_failure_message("no %s checked @ %s" % [t, key]).is_true()
+		assert_int(TmpTokens.min_font()).is_greater_equal(int(UiScale.dp(12.0)))
 		(m[1] as SubViewport).queue_free()
 	await get_tree().process_frame
+
+
+## Negative control: with the floor raised above what the widgets draw, the same check must report every
+## widget type as too small, at both sizes. This proves the check can fail for each type.
+func test_the_text_floor_check_can_fail_for_every_widget_type_at_both_sizes() -> void:
+	for key: String in F.SIZES:
+		var m := await _mount(key)
+		var rep := _text_report(m[0], UiScale.dp(60.0), key)
+		for t: String in DRAWN_TYPES:
+			assert_bool(rep["small_types"].has(t)).override_failure_message("%s not reported @ %s" % [t, key]).is_true()
+		(m[1] as SubViewport).queue_free()
+	await get_tree().process_frame
+
+
+func test_a_narrow_button_shrinks_its_text_to_the_minimum_before_cutting() -> void:
+	var m := await _mount("desktop")
+	var b := TmpButton.new()
+	b.set_caption("Caption text")
+	b.custom_minimum_size.x = 0.0   # a Control cannot be sized below its minimum
+	var default_fs := int(UiScale.dp(16.0))
+	var info := b._metrics(UiScale.touch_min())
+	var bold := TmpTokens.font_bold()
+	var min_need := bold.get_string_size(b.caption, HORIZONTAL_ALIGNMENT_LEFT, -1, TmpTokens.min_font()).x + float(info["text_x"]) + float(info["pad"]) + float(info["bevel"]) * 2.0
+	# Wide enough for the minimum size only: shrunk, not cut.
+	b.size = Vector2(min_need + 2.0, UiScale.touch_min())
+	var sizes: Array = b.drawn_font_sizes()
+	assert_int(sizes[0]).is_less(default_fs)
+	assert_int(sizes[0]).is_greater_equal(TmpTokens.min_font())
+	assert_bool(b.is_truncated()).is_false()
+	# Narrower than the minimum size needs: the size stays at the minimum and the text is cut (and reported).
+	b.size = Vector2(min_need * 0.6, UiScale.touch_min())
+	assert_int(b.drawn_font_sizes()[0]).is_equal(TmpTokens.min_font())
+	assert_bool(b.is_truncated()).is_true()
+	b.free()
+	(m[1] as SubViewport).queue_free()
+	await get_tree().process_frame
+
+
+func test_set_fill_after_set_caption_grows_the_button_for_the_marker() -> void:
+	var b := TmpButton.new()
+	b.set_caption("Medium caption")
+	var before := b.custom_minimum_size.x
+	b.set_fill(0.5)
+	assert_float(b.custom_minimum_size.x).is_greater(before)
+	b.free()
 
 
 func test_the_truncation_check_fails_for_a_too_long_caption() -> void:
@@ -151,7 +211,9 @@ func test_reduced_motion_turns_flicker_off() -> void:
 	var m := await _mount("desktop")
 	var g: Control = m[0]
 	g.set_reduced_motion(true)
-	assert_float(TmpCrt.effective_flicker(g.crt_overlay())).is_equal(0.0)
+	assert_int(g.crt_overlays().size()).is_equal(2)
+	for o: ColorRect in g.crt_overlays():
+		assert_float(TmpCrt.effective_flicker(o)).is_equal(0.0)
 	for b: AlertBanner in g.banners:
 		assert_float(b.blink_period()).is_equal(0.0)
 	(m[1] as SubViewport).queue_free()
@@ -165,12 +227,20 @@ func _signature(root: Node) -> Array:
 		if n is Control:
 			s += "|%s|%s" % [(n as Control).size, (n as Control).custom_minimum_size]
 		if n is PanelButton:
-			s += "|%s|%s|%s" % [n.caption, n.sub_caption, n.lamp_name()]
+			s += "|%s|%s|%s|%s|%s" % [n.caption, n.sub_caption, n.lamp_name(), n.level, n.is_pressed()]
+		if n.has_method("drawn_font_sizes"):
+			s += "|fs%s" % [n.drawn_font_sizes()]
+		if n is TmpLamp:
+			s += "|%s|%s|%s" % [n.lamp_name, n.lit, TmpTokens.lamp_color(n.lamp_name).to_html()]
+		if n is TmpSchematic:
+			s += "|%s" % n.trace_color().to_html()
+		if n is ColorRect and n.material is ShaderMaterial:
+			s += "|" + ",".join(TmpCrt.UNIFORMS.map(func(u: String) -> String: return str((n.material as ShaderMaterial).get_shader_parameter(u))))
 		sig.append(s)
 	return sig
 
 
-func test_kit_is_deterministic() -> void:
+func test_two_builds_of_the_gallery_are_identical_and_the_kit_uses_no_randomness() -> void:
 	var a := await _mount("desktop")
 	var sig_a := _signature(a[0])
 	(a[1] as SubViewport).queue_free()
@@ -193,3 +263,56 @@ func test_gallery_does_not_touch_ship_ids_or_the_host() -> void:
 	var text := FileAccess.get_file_as_string("res://ui/themes/tmp/tmp_kit_gallery.gd")
 	for word in ["SimHost", "sim_host", "ships/", "1701"]:
 		assert_bool(text.contains(word)).override_failure_message(word).is_false()
+
+
+func test_every_crt_overlay_has_its_own_back_buffer_copy_just_before_it() -> void:
+	var m := await _mount("desktop")
+	var g: Control = m[0]
+	var overlays := TmpCrt.find_overlays(g)
+	assert_int(overlays.size()).is_equal(2)
+	var copies := g.find_children("*", "BackBufferCopy", true, false)
+	assert_int(copies.size()).is_equal(overlays.size())
+	for o: ColorRect in overlays:
+		var parent := o.get_parent()
+		var prev := parent.get_child(o.get_index() - 1)
+		assert_bool(prev is BackBufferCopy).override_failure_message("no BackBufferCopy before " + str(o.get_path())).is_true()
+		assert_int((prev as BackBufferCopy).copy_mode).is_equal(BackBufferCopy.COPY_MODE_VIEWPORT)
+	# A second kit user with two regions of its own gets the same structure.
+	var box := VBoxContainer.new()
+	box.add_child(TmpCrt.wrap(Control.new()))
+	box.add_child(TmpCrt.wrap(Control.new()))
+	auto_free(box)
+	assert_int(TmpCrt.find_overlays(box).size()).is_equal(2)
+	assert_int(box.find_children("*", "BackBufferCopy", true, false).size()).is_equal(2)
+	# The full-screen variant: a copy before the overlay, and the documented layer index.
+	var layer := TmpCrt.layer()
+	auto_free(layer)
+	assert_int(layer.layer).is_equal(TmpCrt.DEFAULT_LAYER)
+	assert_bool(layer.get_child(0) is BackBufferCopy and layer.get_child(1) is ColorRect).is_true()
+	(m[1] as SubViewport).queue_free()
+	await get_tree().process_frame
+
+
+func test_the_overlay_follows_the_screen_density_when_the_viewport_changes() -> void:
+	var m := await _mount("desktop")
+	var vp: SubViewport = m[1]
+	var o: ColorRect = (m[0] as TmpKitGallery).crt_overlay()
+	var mat := o.material as ShaderMaterial
+	assert_float(float(mat.get_shader_parameter("scan_period"))).is_equal_approx(TmpCrt.scan_period_px(), 0.001)
+	var before := float(mat.get_shader_parameter("scan_period"))
+	UiScale.set_override(2.5, 1.5)
+	vp.size = Vector2i(1440, 720)   # emits size_changed on the viewport
+	await get_tree().process_frame
+	assert_float(TmpCrt.scan_period_px()).is_not_equal(before)
+	assert_float(float(mat.get_shader_parameter("scan_period"))).is_equal_approx(TmpCrt.scan_period_px(), 0.001)
+	assert_float(float(mat.get_shader_parameter("glow_radius"))).is_equal_approx(TmpCrt.glow_radius_px(), 0.001)
+	vp.queue_free()
+	await get_tree().process_frame
+
+
+func test_a_failed_font_load_is_not_cached_and_banner_teeth_are_clipped() -> void:
+	assert_object(TmpTokens._load_font("res://ui/themes/tmp/fonts/missing.ttf")).is_null()
+	assert_bool(TmpTokens.font() is FontFile).is_true()
+	var b := TmpAlertBanner.new()
+	auto_free(b)
+	assert_bool(b.clip_contents).is_true()
