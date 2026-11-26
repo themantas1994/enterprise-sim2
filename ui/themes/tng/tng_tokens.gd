@@ -28,9 +28,10 @@ const FRAME_COLORS := [PEACH, LAVENDER, SALMON, TAN, PALE_BLUE]
 const FONT_PATH := "res://ui/themes/tng/fonts/Antonio-Regular.ttf"
 
 
-## Smallest text drawn anywhere: 12 dp (12 px at 1280x720, scaled on a phone).
+## Smallest font size drawn anywhere: 16 dp. Antonio is a condensed face, so its glyphs look about a quarter
+## smaller than the size; 16 keeps digits and capitals at 12 px or more at 1280x720 (scaled on a phone).
 static func min_font() -> int:
-	return int(ceilf(UiScale.dp(12.0)))
+	return int(ceilf(UiScale.dp(16.0)))
 
 
 ## `text` cut with an ellipsis so that it fits in `width` at font size `fs`.
