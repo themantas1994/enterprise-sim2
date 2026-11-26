@@ -182,3 +182,63 @@ func test_real_ship_panels_keep_every_touch_target_at_48_dp_at_both_sizes() -> v
 				assert_bool(checked > 0).is_true()
 			vp.queue_free()
 		await get_tree().process_frame
+
+
+func _all_nodes(root: Node) -> Array:
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		out.append(n)
+		stack.append_array(n.get_children())
+	return out
+
+
+## Truncated captions and text sizes below the floor, over the station menu and every panel's inspector.
+func test_no_caption_is_cut_and_no_text_is_below_the_floor_at_both_sizes() -> void:
+	var sizes := {"desktop": [Vector2i(1280, 720), 1.0, 1.0], "phone": [Vector2i(1440, 720), 2.5, 1.5]}
+	for key: String in sizes:
+		var cfg: Array = sizes[key]
+		UiScale.set_override(cfg[1], cfg[2])
+		var floor_size := UiScale.dp(12.0)
+		var screens: Array = ["menu"] + _host.panel_ids()
+		for screen: String in screens:
+			var vp := SubViewport.new()
+			vp.size = cfg[0]
+			add_child(vp)
+			var root: Control
+			if screen == "menu":
+				var menu := StationMenu.new()
+				menu.host = _host
+				root = menu
+			else:
+				var panel: PanelBase = (load("res://ui/panels/panel_%s.tscn" % screen) as PackedScene).instantiate()
+				panel.host = _host
+				root = panel
+			vp.add_child(root)
+			var picks: Array = [""]
+			if root is PanelBase:
+				picks = []
+				var seen := {}
+				for id: String in root.wide_ids:
+					var c: Dictionary = root.comp(id)
+					var sig := "%s|%s" % [c.get("kind", ""), c.has("countdown")]
+					if not seen.has(sig):
+						seen[sig] = true
+						picks.append(id)
+			for id: String in picks:
+				if id != "":
+					root.select(id)
+				await get_tree().process_frame
+				await get_tree().process_frame
+				for n: Node in _all_nodes(root):
+					var where := "%s @ %s %s: %s" % [screen, key, id, n.get_path()]
+					if n is PanelButton and n.is_visible_in_tree():
+						assert_bool(n.is_truncated() and not n.sub_caption.begins_with("NO:")).override_failure_message("truncated caption %s '%s' '%s'" % [where, n.caption, n.sub_caption]).is_false()
+						for fs: int in n.drawn_font_sizes():
+							assert_bool(float(fs) >= floor_size).override_failure_message("small text %s: %d" % [where, fs]).is_true()
+					elif (n is Label or n is Readout or n is BarGauge) and n.is_visible_in_tree():
+						var fsz := float(n.get_theme_font_size("font_size", "Label"))
+						assert_bool(fsz >= floor_size).override_failure_message("small text %s: %s" % [where, fsz]).is_true()
+			vp.queue_free()
+	await get_tree().process_frame

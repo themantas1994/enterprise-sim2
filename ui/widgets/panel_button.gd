@@ -34,6 +34,16 @@ func set_fill(value: float) -> void:
 	queue_redraw()
 
 
+## True when the era's drawing had to cut a caption with an ellipsis (tests check this).
+func is_truncated() -> bool:
+	return false
+
+
+## Font sizes the era's drawing uses for the caption and the sub-caption.
+func drawn_font_sizes() -> Array:
+	return []
+
+
 func set_selected(value: bool) -> void:
 	selected = value
 	queue_redraw()

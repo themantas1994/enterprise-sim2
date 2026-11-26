@@ -206,7 +206,11 @@ func _build() -> void:
 	var content := VBoxContainer.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_theme_constant_override("separation", int(UiScale.dp(4.0)))
-	scroll.add_child(content)
+	var cm := MarginContainer.new()      # keeps text clear of the scrollbar
+	cm.add_theme_constant_override("margin_right", int(UiScale.dp(12.0)))
+	cm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cm.add_child(content)
+	scroll.add_child(cm)
 	_controls = HFlowContainer.new()
 	_controls.add_theme_constant_override("h_separation", int(UiScale.dp(6.0)))
 	_controls.add_theme_constant_override("v_separation", int(UiScale.dp(6.0)))
@@ -238,7 +242,11 @@ func _build() -> void:
 	_ins_body = VBoxContainer.new()
 	_ins_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_ins_body.add_theme_constant_override("separation", int(UiScale.dp(4.0)))
-	rscroll.add_child(_ins_body)
+	var im := MarginContainer.new()
+	im.add_theme_constant_override("margin_right", int(UiScale.dp(12.0)))
+	im.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	im.add_child(_ins_body)
+	rscroll.add_child(im)
 
 
 # --- controls ---------------------------------------------------------------------
@@ -577,9 +585,9 @@ func _rebuild_inspector_if_needed(_snap_data: Dictionary) -> void:
 		_ins_body.add_child(_feedback)
 		return
 	var kind := str(c.get("kind", ""))
-	_ins["name"] = kit.readout("Component", UiStatus.pretty(selected))
+	_ins["name"] = kit.readout("Part", UiStatus.pretty(selected))
 	_ins["state"] = kit.readout("State", "")
-	_ins["power"] = kit.readout("Power / temp", "")
+	_ins["power"] = kit.readout("Pwr / temp", "")
 	_ins["integrity"] = kit.gauge("Integrity")
 	_ins_body.add_child(_ins["name"])
 	_ins_body.add_child(_ins["state"])
@@ -591,7 +599,7 @@ func _rebuild_inspector_if_needed(_snap_data: Dictionary) -> void:
 		_ins["countdown"] = kit.readout("Countdown", "")
 		_ins_body.add_child(_ins["countdown"])
 	if c.has("countdown") and _inspector_reactor():
-		var row := HBoxContainer.new()
+		var row := HFlowContainer.new()
 		_ins_body.add_child(row)
 		for spec in [["START", "reactor_start"], ["ONLINE", "reactor_online"], ["SHUTDOWN", "reactor_shutdown"]]:
 			var b := kit.button()
@@ -612,7 +620,7 @@ func _rebuild_inspector_if_needed(_snap_data: Dictionary) -> void:
 		s.value_changed.connect(_on_alloc_changed)
 		_ins["alloc"] = s
 		_ins_body.add_child(s)
-		var prow := HBoxContainer.new()
+		var prow := HFlowContainer.new()
 		_ins_body.add_child(prow)
 		for spec in [["PRIORITY -", -1], ["PRIORITY +", 1]]:
 			var pb := kit.button()
@@ -651,7 +659,7 @@ func _update_inspector(_snap_data: Dictionary) -> void:
 	var u := unit()
 	var level := UiStatus.level_of(c)
 	(_ins["state"] as Readout).set_pair("State", str(c.get("state", "")), level)
-	(_ins["power"] as Readout).set_pair("Power / temp", (fmt(float(c.get("power", 0.0))) + " " + u + " / " + fmt(float(c.get("temp", 0.0)))).strip_edges(), UiStatus.INFO)
+	(_ins["power"] as Readout).set_pair("Pwr / temp", (fmt(float(c.get("power", 0.0))) + " " + u + " / " + fmt(float(c.get("temp", 0.0)))).strip_edges(), UiStatus.INFO)
 	var integ := float(c.get("integrity", 100.0))
 	(_ins["integrity"] as BarGauge).set_reading(integ, 100.0, level, fmt(integ) + "%")
 	var lvl: Variant = detail(selected).get("level", null)
