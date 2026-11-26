@@ -109,3 +109,42 @@ Not verified: the GitHub Actions run on the PR (see the PR for its status); cros
 ### Plan check
 
 Spawns match the model and effort of the agent plan (Orson sonnet/high confirmed at session start; Kit sonnet/medium; Mae sonnet/medium; Greta sonnet/high). One mismatch: Kit and Greta ran as the `general-purpose` agent type because `implementer` and `reviewer` are not available in this session. One spawn beyond the plan: Kit was resumed once to fix the confirmed review findings.
+
+## Phase 3: NCC-1701-D playable (2026-11-25)
+
+Goal: ship data, TNG LCARS widget kit, panels for MSD, warp core, fuel, EPS grid, shields, impulse, SIF/IDF and
+damage control, and 3 scenarios: core breach, Borg drain, coolant leak (PLAN.md section 8, milestone 3).
+Accept: each scenario can be won and lost (headless GdUnit4 tests for both paths); panels readable at 1280x720
+and on a 6-inch phone; all CI jobs on the PR green.
+
+Orson's session check at start: `get_session` reported model claude-sonnet-5-5, effort high.
+
+### Spawn log
+
+One line per spawned worker: agent, task, model, effort, result.
+
+| agent | task | model | effort | result |
+|---|---|---|---|---|
+| Iris (R1) | ledger gaps for the 1701-D ship data, 3 scenarios, font licence and platform facts | sonnet | medium | 22 rows (Borg, coolant, core breach on-screen canon; Antonio and Oswald OFL 1.1; 48 dp; Godot 4.7 UI facts). EPS, core output, impulse reactors and damage control could not be sourced: the manual text is lending-restricted (HTTP 401), nothing bypassed |
+| Orson (inline) | 9 `estimate` ledger rows for the unsourced groups (D-EPS-001..003, D-CORE-004/005, D-IMP-009/010, D-COOL-003, D-DMG-001) and the component contract (ADR 0002) | sonnet | high | rows labelled estimate with the reason; ADR 0002 written before Kit and Lyra started |
+| Kit (K3) | ships/1701d.json, sim/systems, 3 scenarios, tests (own worktree) | sonnet | medium | 135 components, ShipRuntime, 3 scenarios, 126 tests; one generic core change (`add_heat`, 3 tests); greedy solver sufficient |
+| Lyra (L1) | tng kit, 8 panels, station menu, scenario select and status, SimHost (own worktree, parallel with Kit) | sonnet | medium | 15 UI tests; Antonio font from the pinned commit, checksum matches; UI built against a fake runtime |
+| Mae (M2) | tests, real-runtime run, panel screenshots at both sizes, panel-to-sim check, Android | sonnet | medium | 141 cases pass twice; all 3 scenarios lost with no input; found no UI controls for ship commands, scenario state carried over, phone layout cut off; APK builds, emulator not verified (no KVM, no emulator binary, no system image) |
+| Greta (G1) | review of `git diff main...HEAD` | sonnet | high | 3 major (UI cannot win 2 scenarios; raw repair bypasses damage control; second scenario inherits a destroyed ship), 6 minor; all confirmed, fixed |
+| Nell (S1), first run | realism review | fable | high | failed at start: API 429, fable usage credits exhausted; no result |
+| Nell (S1), stand-in | realism review | sonnet | high | 1 high (shield level below Alert minimum), 4 medium, 8 low, read-only (Godot not run); 12 acted on, 3 documented as simplifications |
+| Kit (K3 fixes) | confirmed findings from Greta and Nell, tests first (same worker resumed) | sonnet | medium | 158 cases; send() rejects raw repair, damage, add_heat; scenario start resets the ship in place; shield level 0.85..1; per-hull SIF/IDF rule |
+| Lyra (L1 fixes) | confirmed UI findings (same worker resumed) | sonnet | medium | ship-command controls on every panel, layout fixes, SimHost validity and dispose, UI-driven win tests for all 3 scenarios; 173 cases |
+| Mae (M2 re-run) | second QA pass and new screenshots (same worker resumed) | sonnet | medium | see Verification |
+
+### Notes
+
+- Agent types: the plan names `implementer` and `reviewer` types; this session offers `general-purpose` (and a few unrelated ones). Kit, Lyra, Greta and Nell ran as `general-purpose` with the model and effort of the plan (same mismatch as Phases 1 and 2).
+- Model deviation: Nell is planned as fable/high. Her fable run died on an API usage-credit error before producing anything, so the review was re-run on sonnet/high. This is a deviation from the plan table; a fable review of ships/1701d.json is still outstanding.
+- Source gate: the TNG Technical Manual text could not be read in this session (the only online text copy is lending-restricted). Everything the ship file takes from EPS, core and nacelle power, impulse reactors, backup generators, coolant loops and damage control is `estimate` (rows D-EPS-*, D-CORE-004/005, D-IMP-009/010, D-COOL-003, D-DMG-001). D-IMP-004 stays unverified and unused. These rows should be checked against a readable copy of the manual.
+- Power unit is MW. Canon-scale rows (D-IMP-003, D-SHLD-016, D-NAVD-009) do not drive live values. Cruise shield draw is the ledger's 1,152 MW (D-SHLD-011).
+- Core change: `add_heat` command in sim/core (generic; coolant needs to add and remove heat), with tests.
+- Solver: the greedy priority allocator was sufficient for the 1701-D graph (trunk cut reroutes through `eps_cross_link`, shedding follows priority). Known side effect: the nearest source is always preferred, so load balancing between reactors is done with setpoints.
+- Documented simplifications: core ejection is manual only (D-SAFE-003..005); no shield backup service timer (D-SHLD-009); Borg shield adaptation is a gameplay mapping of D-BORG-001/002 and the power drain is a gameplay invention (D-BORG-004, estimate); Separated Flight and diagnostics (D-MODE-009/010, D-DIAG) are not modelled; runtime and system state have no save/load.
+- Open: theme is built once at startup (no rebuild on window resize or rotation); tank fill bars scale against the highest level seen because the snapshot has no tank capacity; the Android emulator smoke test is not verified.
+- Repo hygiene: the existing Phase 1 convention names agents in this file and in the `verified_by` column of older ledger rows; no new file outside this log names an agent, memory or the config repo.
