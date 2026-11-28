@@ -15,7 +15,7 @@ conflict in two lines instead of diverging silently, and this file is amended.
 - Source gate: every Star Trek value carries a ledger id from `docs/sources.md`. Game tuning (heat rates, leak
   rates, countdown lengths, scenario thresholds, repair times, conduit capacities, shield facings) is marked
   `estimate` with a one-line reason, citing the estimate row where one exists (D-EPS-002, D-CORE-004,
-  D-CORE-005, D-COOL-003, D-DMG-001). D-IMP-004 is unverified and is not used.
+  D-CORE-005, D-COOL-003, D-DMG-001). D-IMP-004 is verified (10^8 MW lower throttle limit) but no throttle range is modelled.
 - Counts below come from the ledger. Derived values cite both source ids (for example one SIF generator is
   20 sources x 12 MW from D-SIF-003 and D-SIF-004).
 - Panel map: `ships/1701d.json` carries a `panels` object, `panel_id -> { "title", "components": [ids] }`.
@@ -29,9 +29,9 @@ conflict in two lines instead of diverging silently, and this file is amended.
 | warp core | `warp_core`; `warp_injector_matter_1`..`_6`; `warp_injector_antimatter_1`..`_3`; `warp_constrictor_upper`, `warp_constrictor_lower`; `warp_dilithium_frame`; `warp_nacelle_port`, `warp_nacelle_stbd` | D-WARP-001..020, D-NAC-001..010, D-SAFE-001..005, D-CORE-004 |
 | coolant | `coolant_core`, `coolant_eps` (stores; leak is a fault on them) | D-COOL-001..003 |
 | fuel | `antimatter_pod_01`..`_30`; `deuterium_tank_main`; `deuterium_aux_saucer`; `antimatter_generator` | D-FUEL-001..014, D-IMP-005 |
-| EPS sources | `warp_core`; `impulse_main`; `impulse_saucer_1`, `impulse_saucer_2`; `aux_fusion_1`, `aux_fusion_2`; `battery_emergency` | D-EPS-001, D-IMP-001, -002, -009, -010 |
+| EPS sources | `warp_core`; `impulse_main`; `impulse_saucer_1`, `impulse_saucer_2`; `aux_fusion_1`, `aux_fusion_2` (no emergency battery: the manual lists none as an EPS source) | D-EPS-001, D-IMP-001, -002, -009, -010 |
 | EPS conduits | `eps_trunk_a`, `eps_trunk_b`, `eps_cross_link`, `eps_sub_saucer`, `eps_sub_engineering`, `eps_sub_nacelle`, `eps_sub_weapons` | D-EPS-001..003, D-PHAS-002, D-WARP-016 |
-| impulse | `impulse_main`, `impulse_saucer_1`, `impulse_saucer_2`, `aux_fusion_1`, `aux_fusion_2`, `impulse_drive` (consumer: thrust) | D-IMP-001..010 (not -004) |
+| impulse | `impulse_main`, `impulse_saucer_1`, `impulse_saucer_2`, `aux_fusion_1`, `aux_fusion_2`, `impulse_drive` (consumer: thrust) | D-IMP-001..010 |
 | shields | `shield_grid` (control: frequency, modulation, facing weights); generators `shield_gen_p1`..`p5` (Deck 10), `shield_gen_s1`..`s3` (Deck 31), `shield_gen_np1`, `_np2`, `shield_gen_ns1`, `_ns2`; `shield_backup_primary`, `shield_backup_secondary` (4 units each) | D-SHLD-001..021, D-BORG-001..003 |
 | SIF | `sif_grid`; `sif_gen_p1`..`p3` (Deck 11), `sif_gen_s1`, `_s2` (Deck 32); `sif_backup_primary`, `sif_backup_secondary` (2 units each) | D-SIF-001..018 |
 | IDF | `idf_grid`; `idf_gen_p1`..`p4` (Deck 11), `idf_gen_e1`, `_e2` (Deck 33); `idf_backup_primary`, `idf_backup_secondary` (3 units each) | D-IDF-001..014 |
@@ -52,7 +52,7 @@ Panel ids are the keys of the panel map; the station menu shows them in this ord
 | `msd` | one tile per group: `warp_core`, `coolant_core`, `coolant_eps`, `deuterium_tank_main`, `antimatter_pod_*` (summary), `eps_trunk_a`, `eps_trunk_b`, `shield_grid`, `sif_grid`, `idf_grid`, `impulse_main`, `impulse_saucer_1`, `impulse_saucer_2`, `nav_deflector`, `phaser_array`, `life_support`, `computer_core_*`; the situation monitor lists every off-nominal id of the whole map |
 | `warp_core` | `warp_core`, `warp_injector_*`, `warp_constrictor_*`, `warp_dilithium_frame`, `warp_nacelle_*`, `coolant_core` |
 | `fuel` | `antimatter_pod_01`..`_30`, `deuterium_tank_main`, `deuterium_aux_saucer`, `antimatter_generator` |
-| `eps` | EPS sources, EPS conduits, `battery_emergency`, `coolant_eps`, and the consumer ids `shield_grid`, `sif_grid`, `idf_grid`, `impulse_drive`, `nav_deflector`, `phaser_array`, `life_support`, `computer_core_*` |
+| `eps` | EPS sources, EPS conduits, `coolant_eps`, and the consumer ids `shield_grid`, `sif_grid`, `idf_grid`, `impulse_drive`, `nav_deflector`, `phaser_array`, `life_support`, `computer_core_*` |
 | `shields` | `shield_grid`, `shield_gen_*`, `shield_backup_*` |
 | `impulse` | `impulse_main`, `impulse_saucer_*`, `aux_fusion_*`, `impulse_drive`, `deuterium_tank_main`, `deuterium_aux_saucer` |
 | `sif_idf` | `sif_grid`, `sif_gen_*`, `sif_backup_*`, `idf_grid`, `idf_gen_*`, `idf_backup_*` |

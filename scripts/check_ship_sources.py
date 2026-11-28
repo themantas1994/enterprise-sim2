@@ -5,12 +5,11 @@ Convention (provisional until the first ship file exists): a ship value is a JSO
 "value" key. It must also have a "source" key holding a non-empty string (a ledger id such as D-WARP-004,
 or "estimate"). Objects without a "value" key are containers and are walked recursively.
 
-A source is "estimate" or one or more ledger ids separated by commas. When a ledger file is given (second
-argument; by default docs/sources.md when the ships directory is the default), every cited id must exist in it
-and must not be `unverified`.
+A source is "estimate" or one or more ledger ids separated by commas. Every cited id must exist in the ledger
+and be a `verified` row (estimate rows are cited as "estimate", not by id).
 
-Usage: python3 -I scripts/check_ship_sources.py [dir, default ships] [ledger, default docs/sources.md for the
-default dir, none otherwise]. Exit 1 on any violation.
+Usage: python3 -I scripts/check_ship_sources.py [dir, default ships] [ledger, default docs/sources.md; "-" skips
+the ledger check]. Exit 1 on any violation, 2 on a missing directory or ledger.
 An empty or missing-file ships/ directory passes, but the script still runs.
 """
 import json
@@ -44,8 +43,8 @@ def walk(node, path, errors, ledger):
                         continue
                     if tok not in ledger:
                         errors.append(f"{path}: source '{tok}' is not a ledger id")
-                    elif ledger[tok] == "unverified":
-                        errors.append(f"{path}: source '{tok}' is unverified in the ledger")
+                    elif ledger[tok] != "verified":
+                        errors.append(f"{path}: source '{tok}' is '{ledger[tok]}' in the ledger, not verified")
         else:
             for k, v in node.items():
                 walk(v, f"{path}.{k}", errors, ledger)
@@ -57,7 +56,11 @@ def walk(node, path, errors, ledger):
 def main() -> int:
     repo = Path(__file__).resolve().parent.parent
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else repo / "ships"
-    ledger_path = Path(sys.argv[2]) if len(sys.argv) > 2 else (repo / "docs" / "sources.md" if len(sys.argv) == 1 else None)
+    arg = sys.argv[2] if len(sys.argv) > 2 else None
+    ledger_path = None if arg == "-" else Path(arg) if arg else repo / "docs" / "sources.md"
+    if ledger_path is not None and not ledger_path.is_file():
+        print(f"no such ledger: {ledger_path}", file=sys.stderr)
+        return 2
     ledger = load_ledger(ledger_path) if ledger_path else None
     if not root.is_dir():
         print(f"no such dir: {root}", file=sys.stderr)
