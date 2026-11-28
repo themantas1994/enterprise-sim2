@@ -342,3 +342,7 @@ One line per spawned worker: agent, task, model, effort, result.
 
 | agent | task | model | effort | result |
 |---|---|---|---|---|
+| Kit (K-clean) | remove every 1701-A/E file and reference (ui/themes/tmp and fc, test_tmp_kit, docs/screens/1701a, ADR 0003, two source-search reports); run the suite | sonnet | medium | all deleted, nothing from the 1701-D kit needed keeping; 174 test cases (189 minus the 15 in the removed kit test), 0 errors, 0 failures, 0 orphans; ran as `general-purpose` (no `implementer` type) |
+| Iris (R1a) | manual check of chapters 1-4: D-DESIGN, D-SIF, D-IDF, D-ENG, D-DIAG, D-COMP (58 rows) | sonnet | medium | 58 match, 0 corrected; several ledger page numbers wrong (fixed); 51 new rows (D-SEP, D-COMP, D-SIF, D-IDF, D-DESIGN, D-ENG, D-DIAG); every number read on a page image |
+| Iris (R1b) | manual check of chapter 5: D-WARP, D-NAC, D-FUEL, D-SAFE plus D-CORE-001/002/004/005, D-COOL-003, D-DMG-001 (55 rows) | sonnet | medium | 49 match, 6 not in the manual (core output, breach time and threshold, coolant, damage-control teams); 39 new rows (D-WARP, D-NAC, D-BUSS, D-FUEL, D-SAFE) |
+| Iris (R1c) | manual check of chapters 6, 7, 11, 12, 15, 16: D-IMP, D-EPS, D-NAVD, D-TRAC, D-PHAS, D-TORP, D-SHLD, D-MODE (69 rows) | sonnet | medium | 61 match, 3 corrected (D-IMP-009, D-TORP-002, D-MODE-009), 2 new values for estimates (D-IMP-004 = 10^8 MW, D-EPS-001), 3 not in the manual (D-EPS-002, D-EPS-003, D-IMP-010); 93 new rows (one duplicate dropped) |
