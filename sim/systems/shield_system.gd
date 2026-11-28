@@ -24,6 +24,15 @@ const GENS := [
 	"shield_gen_s1", "shield_gen_s2", "shield_gen_s3",
 	"shield_gen_np1", "shield_gen_np2", "shield_gen_ns1", "shield_gen_ns2",
 ]
+## Order in which generators are switched on: one per major section first (primary hull, secondary hull, nacelles; the
+## cruise rule D-SHLD-025, so the three cruise generators of D-SHLD-011 are one in each), then the rest in turn. A
+## lost generator is skipped and the next one of the list takes over.
+const ORDER := [
+	"shield_gen_p1", "shield_gen_s1", "shield_gen_np1",
+	"shield_gen_p2", "shield_gen_s2", "shield_gen_ns1",
+	"shield_gen_p3", "shield_gen_s3", "shield_gen_np2",
+	"shield_gen_p4", "shield_gen_ns2", "shield_gen_p5",
+]
 const SECONDARY_STANDBY := ["shield_gen_s1", "shield_gen_s2", "shield_gen_s3"]
 const BACKUPS := ["shield_backup_primary", "shield_backup_secondary"]
 const GRID := "shield_grid"
@@ -125,7 +134,7 @@ func update(_snap: Dictionary) -> void:
 	elif mode == "reduced_power":
 		n = int(rt.tune("shields", "reduced_gens"))
 	var avail: Array = []
-	for id: String in GENS:
+	for id: String in ORDER:
 		if rt.alive(id):
 			avail.append(id)
 	active = avail.slice(0, n)

@@ -3,7 +3,7 @@ extends ScenarioBase
 ## A Borg cube locks on and drains the shields (D-BORG-001..003). Its drain per shot depends on how well it has
 ## adapted to the shield frequency and modulation in use, so the player must keep rotating both. While the shields
 ## are down the cube also drains the output of the warp core and the main impulse reactor (a gameplay invention,
-## D-BORG-004, estimate); the saucer reactors, and auxiliary fusion are out of its reach. Survive
+## D-BORG-004, estimate); the saucer reactors and auxiliary fusion are out of its reach. Survive
 ## until the timer ends. Lost when the shields and the power supply both collapse for hold ticks.
 
 var _rt: Variant = null

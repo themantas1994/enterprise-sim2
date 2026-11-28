@@ -115,9 +115,12 @@ func test_every_value_has_a_source_and_estimates_have_a_reason() -> void:
 			assert_str(str(w["reason"])).override_failure_message("estimate without reason at " + w["path"]).is_not_empty()
 
 
-func test_unverified_impulse_row_is_not_used() -> void:
+func test_no_impulse_throttle_range_is_modelled() -> void:
+	# the reaction chamber throttle range (D-IMP-003, D-IMP-004) is not used: output is game-sized (D-IMP-009)
 	var text := FileAccess.get_file_as_string(H.SHIP)
-	assert_bool(text.contains("D-IMP-004")).is_false()
+	var re := RegEx.new()
+	re.compile("\"source\": \"[^\"]*D-IMP-00[34]")
+	assert_bool(re.search(text) != null).is_false()  # no value is sourced from the throttle range rows
 
 
 func test_ledger_ids_cited_in_the_ship_file_exist_in_the_ledger() -> void:

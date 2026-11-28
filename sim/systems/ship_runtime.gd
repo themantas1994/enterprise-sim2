@@ -346,6 +346,8 @@ func _pass(c: Dictionary) -> Dictionary:
 		if float(v) < 0.0 or float(v) > float(_defs[id]["max_output"]):
 			return ShipSystem.no("output must be within 0..max_output")
 		setpoints[id] = float(v)
+		if id == "warp_core":
+			modes.core_follow = false  # the player's setting replaces the Cruise preset
 		return ShipSystem.ok()
 	if type.begins_with("reactor_"):
 		var rc: Dictionary = _snap["components"][id]

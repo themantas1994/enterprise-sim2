@@ -34,7 +34,12 @@ func setup(runtime: Variant) -> void:
 	for id: String in PODS:
 		levels[id] = pod_m3
 	levels[MAIN] = float(rt.tune("fuel", "deuterium_main_m3"))
-	levels[AUX_TANK] = float(rt.tune("fuel", "deuterium_aux_m3"))
+	levels[AUX_TANK] = _aux_total_m3()
+
+
+## The saucer has 32 auxiliary tanks of 113 m3 with cross-feeds (D-IMP-017, D-IMP-005, D-FUEL-012), modelled as one store.
+func _aux_total_m3() -> float:
+	return float(rt.tune("fuel", "deuterium_aux_tanks")) * float(rt.tune("fuel", "deuterium_aux_tank_m3"))
 
 
 func set_level(id: String, m3: float) -> void:
@@ -109,7 +114,7 @@ func _burn() -> void:
 	var p_saucer := 0.0
 	for id: String in SAUCER_SOURCES:
 		p_saucer += rt.comp(id).get("power", 0.0)
-	levels[AUX_TANK] = maxf(0.0, levels[AUX_TANK] - p_saucer / float(rt.tune("fuel", "aux_nominal_mw")) * float(rt.tune("fuel", "deuterium_aux_m3")) / float(rt.tune("fuel", "aux_endurance_ticks")))
+	levels[AUX_TANK] = maxf(0.0, levels[AUX_TANK] - p_saucer / float(rt.tune("fuel", "aux_nominal_mw")) * _aux_total_m3() / float(rt.tune("fuel", "aux_endurance_ticks")))
 
 
 func _generator() -> void:

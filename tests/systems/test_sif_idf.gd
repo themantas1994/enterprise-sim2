@@ -19,7 +19,6 @@ func _kill(id: String) -> void:
 func _go_to_warp(w: float) -> void:
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "core_set_mode", "value": "warp"})).is_true()
-	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": w})).is_true()
 	H.run(_rt, 200)
 	assert_float(_rt.propulsion.warp).is_equal_approx(w, 0.001)
@@ -101,9 +100,10 @@ func test_all_five_lost_is_red_alert_with_immediate_downwarp() -> void:
 	_kill("sif_backup_primary")
 	_kill("sif_backup_secondary")
 	H.run(_rt, 10)
-	assert_float(_rt.snapshot()["ship"]["sif_idf"]["impulse_cap"]).is_equal_approx(0.003, 0.0001)
-	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.5})).is_false()
-	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.002})).is_true()
+	assert_float(_rt.snapshot()["ship"]["sif_idf"]["accel_ratio"]).is_equal_approx(0.003, 0.0001)
+	assert_float(_rt.snapshot()["ship"]["sif_idf"]["speed_limit"]).is_equal_approx(0.2, 0.0001)  # ladder 3: inertially safe speed (D-SIF-017)
+	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.5})).is_false()  # above the safe speed
+	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.1})).is_true()
 
 
 func test_a_lost_generator_without_a_backup_is_yellow_alert() -> void:

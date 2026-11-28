@@ -8,7 +8,8 @@ extends ShipSystem
 ## power, when the core leaves warp mode or goes down, or when the SIF ladder demands it.
 ## Navigational deflector: 27 MW at impulse (D-NAVD-006); at warp 80% (D-NAVD-008) of each running generator
 ## (768 MW = 6 sources x 128 MW, D-NAVD-002, D-NAVD-003), 2 generators above warp 8 and 3 above 9.2 (D-NAVD-011); the 80% above warp 8 is an estimate.
-## Impulse: fraction 0..1 of normal impulse, which is limited to 0.25 c (D-IMP-006).
+## Impulse: fraction 0..1 of normal impulse, which is limited to 0.25 c (D-IMP-006). The SIF and IDF fields limit its
+## ACCELERATION (slew rate), see SifIdfSystem.accel_ratio; only the failure ladder sets a speed limit.
 ## Commands: set_warp {value}, set_impulse {value}.
 
 const NAC := ["warp_nacelle_port", "warp_nacelle_stbd"]
@@ -51,6 +52,8 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 		if not finite(v) or float(v) < 0.0 or float(v) > float(rt.tune("propulsion", "warp_max")):
 			return no("warp factor must be within 0..%s" % str(rt.tune("propulsion", "warp_max")))
 		var w := float(v)
+		if rt.modes.mode == "reduced_power" and absf(w - roundf(w)) > 1e-9:
+			return no("Reduced Power allows integral warp factors only (D-MODE-026)")
 		if w > 0.0:
 			if not rt.warp.can_warp():
 				return no("warp core must be online in warp mode")
@@ -68,8 +71,8 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 	if type == "set_impulse":
 		if not finite(v) or float(v) < 0.0 or float(v) > 1.0:
 			return no("impulse must be within 0..1")
-		if float(v) > rt.sif_idf.impulse_cap():
-			return no("inertial damping too weak, impulse limited to %s (D-SIF-014)" % str(rt.sif_idf.impulse_cap()))
+		if float(v) > rt.sif_idf.speed_limit():
+			return no("SIF failure ladder: impulse limited to the inertially safe speed %s (D-SIF-017)" % str(rt.sif_idf.speed_limit()))
 		if float(v) > 0.0 and not rt.fuel.impulse_fuel_ok():
 			return no("no deuterium for the main impulse engine")
 		impulse_target = float(v)
@@ -94,12 +97,12 @@ func update(_snap: Dictionary) -> void:
 			warp_target = minf(warp_target, sustained)
 			rt.event("high_warp_limit", {})
 	warp = move_toward(warp, warp_target, float(rt.tune("propulsion", "warp_slew")))
-	var cap: float = rt.sif_idf.impulse_cap()
-	impulse_target = minf(impulse_target, cap)
+	impulse_target = minf(impulse_target, rt.sif_idf.speed_limit())
 	if not rt.fuel.impulse_fuel_ok():
 		impulse_target = 0.0
-	impulse = move_toward(impulse, impulse_target, float(rt.tune("propulsion", "impulse_slew")))
-	impulse = minf(impulse, cap)
+	# the fields limit the acceleration (D-SIF-014, D-SIF-015), not the speed: with a weak field the speed changes
+	# only at a share of the normal slew rate and with none it holds (D-SIF-026)
+	impulse = move_toward(impulse, impulse_target, float(rt.tune("propulsion", "impulse_slew")) * rt.sif_idf.accel_ratio())
 	# demands
 	var wd := maxf(warp, warp_target)
 	var coupling: float = 1.0 - float(rt.tune("shields", "warp_coupling_loss")) * rt.shields.output_level

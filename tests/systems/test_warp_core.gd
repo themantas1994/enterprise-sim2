@@ -86,7 +86,10 @@ func test_shutdown_aborts_start_up_and_hot_chamber_cools_in_ten_minutes() -> voi
 func test_ratio_moves_to_one_to_one_at_warp_8_and_stays() -> void:
 	_rt = H.make()
 	H.run(_rt, 5)
-	assert_float(_warp()["ratio_target"]).is_equal_approx(25.0, 0.001)
+	assert_float(_warp()["ratio_target"]).is_equal_approx(10.0, 0.001)  # power generation, D-WARP-030
+	assert_float(_warp()["ratio"]).is_equal_approx(10.0, 0.001)  # a core that runs at start is not at the 25:1 idle step
+	assert_float(_rt.warp.ratio_target(1.0)).is_equal_approx(10.0, 0.001)  # the Warp 1 base
+	assert_float(_rt.warp.ratio_target(4.5)).is_equal_approx(5.5, 0.001)  # linear from 10:1 at Warp 1 to 1:1 at Warp 8
 	_rt.send({"type": "core_set_mode", "value": "warp"})
 	_rt.send({"type": "set_output", "target": "warp_core", "value": 5000})
 	_rt.send({"type": "set_warp", "value": 8.0})
@@ -173,7 +176,6 @@ func test_warp_needs_warp_mode_core_and_nacelles() -> void:
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 5.0})).is_false()  # power mode
 	assert_bool(H.accepted(_rt, {"type": "core_set_mode", "value": "warp"})).is_true()
-	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 9.9})).is_false()  # above 9.6 (D-DESIGN-003)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 6.0})).is_true()
 	H.run(_rt, 200)

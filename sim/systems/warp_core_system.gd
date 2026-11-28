@@ -7,7 +7,8 @@ extends ShipSystem
 ##   reactor_start      -> stage heating (needs EPS power on warp_core_aux and one matter injector) until the
 ##                         chamber reaches 2.5 million K, stage heated (a still-warm chamber skips this)
 ##   core_inject        -> stage injecting (needs an antimatter injector, pod containment and antimatter), then idle
-##                         at 25:1
+##                         at 25:1 (D-WARP-012, the idle and start-up step); a core that is online generates power at
+##                         10:1, the Warp 1 base (D-WARP-030), moving linearly to 1:1 at Warp 8 (D-WARP-015)
 ##   core_pressurize    -> stage pressurizing to 72,000 kPa, then stage ready; the generic reactor start-up
 ##                         (cold, startup, standby) follows by itself and reactor_online brings the core online.
 ## reactor_shutdown aborts a running start-up. After a shutdown the chamber cools in about 10 minutes (D-SAFE-001).
@@ -60,7 +61,8 @@ func setup(runtime: Variant) -> void:
 	if ONLINE_STATES.has(st) or st == "standby":
 		chamber_k = float(rt.tune("warp", "online_k")) if st != "standby" else float(rt.tune("warp", "heat_k"))
 		pressure_kpa = float(rt.tune("warp", "pressure_kpa"))
-		ratio = float(rt.tune("warp", "idle_ratio"))
+		# 25:1 is the idle and start-up step only (D-WARP-012); a core that runs at start generates power at 10:1 (D-WARP-030)
+		ratio = float(rt.tune("warp", "idle_ratio")) if st == "standby" else ratio_target(0.0)
 	else:
 		chamber_k = float(rt.tune("warp", "ambient_k"))
 
@@ -90,11 +92,15 @@ func usable(ids: Array) -> int:
 	return n
 
 
+## Target ratio of a running core at warp factor `w`: 10:1 for power generation and the Warp 1 base (D-WARP-030), then
+## linear down to 1:1 at Warp 8, unchanged above (D-WARP-015). The 25:1 idle ratio (D-WARP-012) is only the idle and
+## start-up step before the core is online, see _overlay.
 func ratio_target(w: float) -> float:
+	var base_w := float(rt.tune("warp", "base_warp"))
 	var hi := float(rt.tune("warp", "high_warp_factor"))
-	var idle := float(rt.tune("warp", "idle_ratio"))
+	var power := float(rt.tune("warp", "power_ratio"))
 	var full := float(rt.tune("warp", "full_ratio"))
-	return idle + (full - idle) * clampf(w / hi, 0.0, 1.0)
+	return power + (full - power) * clampf((w - base_w) / (hi - base_w), 0.0, 1.0)
 
 
 func eject_ready() -> bool:
@@ -199,8 +205,12 @@ func handle(cmd: Dictionary, _snap: Dictionary) -> Variant:
 func update(snap: Dictionary) -> void:
 	var c: Dictionary = snap["components"][CORE]
 	var fsm: String = c["state"]
+	# the start-up step ends with the ratio set to 10:1 for power generation (D-WARP-030)
+	var entering := ONLINE_STATES.has(fsm) and not ONLINE_STATES.has(_prev_fsm)
 	_overlay(fsm)
 	_prev_fsm = fsm
+	if entering and ratio_auto:
+		ratio = ratio_target(rt.propulsion.warp)
 	_ratio_and_alignment(fsm)
 	_forcefield()
 	_fault(fsm, c)

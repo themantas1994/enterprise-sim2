@@ -382,47 +382,47 @@
     {
       "id": "warp_injector_matter_1",
       "name": "Matter injector set 1",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_matter_2",
       "name": "Matter injector set 2",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_matter_3",
       "name": "Matter injector set 3",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_matter_4",
       "name": "Matter injector set 4",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_matter_5",
       "name": "Matter injector set 5",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_matter_6",
       "name": "Matter injector set 6",
-      "count": {"value": 6, "source": "D-WARP-001"}
+      "count": {"value": 1, "source": "D-WARP-001", "reason": "one of the six matter injectors"}
     },
     {
       "id": "warp_injector_antimatter_1",
       "name": "Antimatter injector nozzle 1",
-      "count": {"value": 3, "source": "D-WARP-004"}
+      "count": {"value": 1, "source": "D-WARP-004", "reason": "one of the three antimatter injectors"}
     },
     {
       "id": "warp_injector_antimatter_2",
       "name": "Antimatter injector nozzle 2",
-      "count": {"value": 3, "source": "D-WARP-004"}
+      "count": {"value": 1, "source": "D-WARP-004", "reason": "one of the three antimatter injectors"}
     },
     {
       "id": "warp_injector_antimatter_3",
       "name": "Antimatter injector nozzle 3",
-      "count": {"value": 3, "source": "D-WARP-004"}
+      "count": {"value": 1, "source": "D-WARP-004", "reason": "one of the three antimatter injectors"}
     },
     {
       "id": "warp_constrictor_upper",
@@ -632,7 +632,9 @@
     {
       "id": "deuterium_aux_saucer",
       "name": "Saucer auxiliary deuterium tank",
-      "volume_m3": {"value": 113, "source": "D-IMP-005"}
+      "tanks": {"value": 32, "source": "D-IMP-017", "reason": "32 auxiliary tanks with 8 cross-feeds (D-FUEL-012), modelled as one store"},
+      "tank_volume_m3": {"value": 113, "source": "D-IMP-005"},
+      "volume_m3": {"value": 3616, "source": "D-IMP-005, D-IMP-017", "reason": "32 tanks x 113 m3"}
     },
     {
       "id": "shield_gen_p1",
@@ -805,22 +807,22 @@
     {
       "id": "dc_team_1",
       "name": "Damage control team 1",
-      "count": {"value": 4, "source": "estimate", "reason": "four teams is a gameplay choice (D-DMG-001)"}
+      "count": {"value": 1, "source": "estimate", "reason": "one team; four teams in all is a gameplay choice (D-DMG-001)"}
     },
     {
       "id": "dc_team_2",
       "name": "Damage control team 2",
-      "count": {"value": 4, "source": "estimate", "reason": "four teams is a gameplay choice (D-DMG-001)"}
+      "count": {"value": 1, "source": "estimate", "reason": "one team; four teams in all is a gameplay choice (D-DMG-001)"}
     },
     {
       "id": "dc_team_3",
       "name": "Damage control team 3",
-      "count": {"value": 4, "source": "estimate", "reason": "four teams is a gameplay choice (D-DMG-001)"}
+      "count": {"value": 1, "source": "estimate", "reason": "one team; four teams in all is a gameplay choice (D-DMG-001)"}
     },
     {
       "id": "dc_team_4",
       "name": "Damage control team 4",
-      "count": {"value": 4, "source": "estimate", "reason": "four teams is a gameplay choice (D-DMG-001)"}
+      "count": {"value": 1, "source": "estimate", "reason": "one team; four teams in all is a gameplay choice (D-DMG-001)"}
     }
   ],
   "panels": {
@@ -1034,9 +1036,11 @@
       "heat_k": {"value": 2500000.0, "source": "D-WARP-011"},
       "online_k": {"value": 2000000000000.0, "source": "D-WARP-014"},
       "pressure_kpa": {"value": 72000.0, "source": "D-WARP-013"},
-      "idle_ratio": {"value": 25.0, "source": "D-WARP-012"},
+      "idle_ratio": {"value": 25.0, "source": "D-WARP-012", "reason": "idle and start-up step only, not the running ratio"},
+      "power_ratio": {"value": 10.0, "source": "D-WARP-030", "reason": "power generation and the base of Warp 1"},
+      "base_warp": {"value": 1.0, "source": "D-WARP-030", "reason": "warp factor at which the 10:1 base holds; below it the core generates power at 10:1"},
       "full_ratio": {"value": 1.0, "source": "D-WARP-015"},
-      "high_warp_factor": {"value": 8.0, "source": "D-WARP-015"},
+      "high_warp_factor": {"value": 8.0, "source": "D-WARP-015", "reason": "1:1 is reached at Warp 8 and kept above it"},
       "cold_ticks": {"value": 6000, "source": "D-SAFE-001", "reason": "about 10 minutes to cold, at 10 ticks per second"},
       "heat_ticks": {"value": 150, "source": "estimate", "reason": "game tuning of the start-up step (D-CORE-004)"},
       "inject_ticks": {"value": 100, "source": "estimate", "reason": "game tuning of the start-up step (D-CORE-004)"},
@@ -1065,7 +1069,8 @@
     "fuel": {
       "pod_m3": {"value": 100.0, "source": "D-FUEL-002"},
       "deuterium_main_m3": {"value": 62500.0, "source": "D-FUEL-007"},
-      "deuterium_aux_m3": {"value": 113.0, "source": "D-IMP-005"},
+      "deuterium_aux_tanks": {"value": 32, "source": "D-IMP-017", "reason": "32 liquid auxiliary tanks in the Saucer Module with cross-feeds (D-FUEL-012)"},
+      "deuterium_aux_tank_m3": {"value": 113.0, "source": "D-IMP-005", "reason": "volume of each saucer auxiliary tank; 32 tanks give 3,616 m3 in all"},
       "endurance_ticks": {"value": 946080000, "source": "D-FUEL-004, D-FUEL-009", "reason": "3 years at 10 ticks per second, at nominal power"},
       "nominal_mw": {"value": 1820.0, "source": "estimate", "reason": "cruise power drawn from the main tank (core plus main impulse, measured 1,818 MW at cruise) so that a full 62,500 m3 deuterium load lasts about 3 years: 3 y x 365 x 86,400 s x 10 ticks/s = 946,080,000 ticks; burn per tick = power / 1,820 MW x 62,500 m3 / 946,080,000 (D-FUEL-009)"},
       "aux_endurance_ticks": {"value": 864000, "source": "estimate", "reason": "24 hours at nominal saucer power, game tuning (D-IMP-005)"},
@@ -1097,7 +1102,7 @@
       "alert_level": {"value": 0.85, "source": "D-SHLD-013"},
       "max_gens": {"value": 7, "source": "D-SHLD-014"},
       "cruise_gens": {"value": 3, "source": "D-SHLD-011, D-SHLD-004, D-SHLD-005", "reason": "1,152 MW cruise graviton load / 384 MW per generator"},
-      "reduced_gens": {"value": 1, "source": "estimate", "reason": "one generator at reduced power, game tuning (D-EPS-003)"},
+      "reduced_gens": {"value": 1, "source": "estimate", "reason": "Reduced Power keeps the deflectors at minimum, one generator (D-MODE-026); the power per generator is game tuning"},
       "yellow_standby_level": {"value": 0.15, "source": "estimate", "reason": "partial standby of the secondary generators at yellow alert (D-MODE-004), fraction is game tuning (D-MODE-004)"},
       "backup_units": {"value": 4, "source": "D-SHLD-008"},
       "backup_fraction": {"value": 0.65, "source": "D-SHLD-010"},
@@ -1117,11 +1122,12 @@
       "backup_units": {"value": 2, "source": "D-SIF-007"},
       "service_ticks": {"value": 432000, "source": "D-SIF-008", "reason": "12 hours at 10 ticks per second"},
       "cruise_per_hull": {"value": 1, "source": "D-SIF-013", "reason": "at least 1 active generator per hull in cruise"},
-      "safe_impulse": {"value": 0.2, "source": "estimate", "reason": "impulse fraction counted as inertially safe while the SIF ladder is at level 2 or 3 (D-SIF-017) (D-DMG-001)"},
+      "safe_impulse": {"value": 0.2, "source": "estimate", "reason": "impulse fraction counted as the inertially safe speed while the SIF ladder is at level 2 or 3; the manual asks only to decelerate to a safe speed (D-SIF-017)"},
+      "reduced_total": {"value": 1, "source": "D-SIF-022", "reason": "Reduced Power: one SIF generator feeds the whole spaceframe"},
       "yellow_lost": {"value": 2, "source": "D-SIF-016"},
       "slow_lost": {"value": 3, "source": "D-SIF-017"},
       "red_lost": {"value": 5, "source": "D-SIF-018"},
-      "inertial_cap": {"value": 0.003, "source": "D-SIF-014, D-SIF-015", "reason": "3 g survivable against over 1,000 g at full impulse"},
+      "inertial_cap": {"value": 0.003, "source": "D-SIF-014, D-SIF-015", "reason": "acceleration ratio, 3 g survivable against over 1,000 g at full impulse: with a weak field the speed can change at only this share of the normal slew rate (D-SIF-026: after a total failure the speed is practically fixed)"},
       "min_field": {"value": 0.1, "source": "estimate", "reason": "field strength below which impulse is capped (D-SIF-014)"}
     },
     "idf": {
@@ -1129,6 +1135,7 @@
       "backup_fraction": {"value": 0.65, "source": "D-IDF-009"},
       "backup_units": {"value": 3, "source": "D-IDF-007"},
       "cruise_per_hull": {"value": 2, "source": "D-IDF-014", "reason": "at least 2 active generators per hull in cruise"},
+      "reduced_total": {"value": 1, "source": "D-IDF-019", "reason": "Reduced Power: one IDF generator feeds the whole spaceframe"},
       "service_ticks": {"value": 432000, "source": "D-IDF-008", "reason": "12 hours at 10 ticks per second"},
       "lag_ticks": {"value": 3, "source": "D-IDF-013", "reason": "295 ms rounded to 3 ticks of 100 ms"}
     },
@@ -1159,11 +1166,12 @@
       "per_damage_ticks": {"value": 2.5, "source": "estimate", "reason": "extra ticks per missing integrity point (D-DMG-001)"}
     },
     "modes": {
-      "core_frac_cruise": {"value": 0.3, "source": "estimate", "reason": "core setting at cruise as a share of maximum (D-EPS-003)"},
+      "core_frac_cruise": {"value": 0.3, "source": "estimate", "reason": "core setting at cruise below warp as a share of maximum; it shares the load with the main impulse engines (D-CORE-004)"},
+      "core_frac_warp": {"value": 0.65, "source": "estimate", "reason": "core setting of the Cruise preset while at warp or warp is set: 3,250 MW with the main impulse covers about 2,980 MW total load at Warp 6, the normal cruising speed (D-DESIGN-001, 15.4; D-CORE-004)"},
       "core_frac_yellow": {"value": 0.2, "source": "D-MODE-001"},
       "core_frac_red": {"value": 0.75, "source": "D-MODE-005"},
-      "impulse_cruise_mw": {"value": 1200.0, "source": "estimate", "reason": "main impulse setting at cruise: carries ship power if the core goes down (D-SAFE-002) (D-EPS-003)"},
-      "reduced_impulse_mw": {"value": 1100.0, "source": "estimate", "reason": "minimum main impulse that covers onboard use (D-MODE-012), game-sized (D-EPS-003)"},
+      "impulse_cruise_mw": {"value": 1200.0, "source": "estimate", "reason": "main impulse setting at cruise: carries ship power if the core goes down (D-SAFE-002, D-IMP-009)"},
+      "reduced_impulse_mw": {"value": 1100.0, "source": "estimate", "reason": "minimum main impulse that covers onboard use (D-MODE-012), game-sized (D-IMP-009)"},
       "phaser_allocation": {"value": {"cruise": 0.1, "yellow_alert": 0.5, "red_alert": 1.0, "reduced_power": 0.0}, "source": "estimate", "reason": "phaser charge share by mode (D-EPS-003)"},
       "priorities": {"value": {"cruise": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "warp_core_aux": 1, "sif_grid": 3, "idf_grid": 3, "shield_grid": 4, "nav_deflector": 5, "impulse_drive": 5, "warp_nacelle_port": 6, "warp_nacelle_stbd": 6, "phaser_array": 8, "antimatter_generator": 9}, "yellow_alert": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "sif_grid": 2, "idf_grid": 2, "warp_core_aux": 1, "shield_grid": 3, "phaser_array": 4, "nav_deflector": 5, "impulse_drive": 5, "warp_nacelle_port": 6, "warp_nacelle_stbd": 6, "antimatter_generator": 9}, "red_alert": {"antimatter_containment": 0, "life_support": 1, "computer_core_p1": 2, "computer_core_p2": 2, "computer_core_e1": 2, "sif_grid": 2, "idf_grid": 2, "warp_core_aux": 1, "shield_grid": 3, "phaser_array": 3, "warp_nacelle_port": 4, "warp_nacelle_stbd": 4, "impulse_drive": 4, "nav_deflector": 5, "antimatter_generator": 9}, "reduced_power": {"antimatter_containment": 0, "life_support": 1, "sif_grid": 2, "idf_grid": 2, "computer_core_p1": 3, "computer_core_p2": 3, "computer_core_e1": 3, "warp_core_aux": 1, "impulse_drive": 5, "shield_grid": 6, "nav_deflector": 7, "warp_nacelle_port": 8, "warp_nacelle_stbd": 8, "phaser_array": 9, "antimatter_generator": 9}}, "source": "estimate", "reason": "consumer priorities per mode, lower number = served first; shed lowest priority first (D-EPS-003) (D-EPS-003)"}
     },
@@ -1192,5 +1200,17 @@
       "collapse_hold": {"value": 100, "source": "estimate", "reason": "ticks both must hold to lose (D-BORG-004)"}
     }
   },
-  "notes": "Every value object carries a ledger id (docs/sources.md) or estimate with a one-line reason; see ADR 0002."
+  "notes": {
+    "text": "Every value object carries a ledger id (docs/sources.md) or estimate with a one-line reason; see ADR 0002.",
+    "documented_simplifications": {
+      "core_ejection": "Manual: the core is ejected when the safety forcefield is breached or when damage threatens the SIF (D-SAFE-003, D-SAFE-004); the pod assembly is ejected effectively automatically (D-SAFE-005). Sim: core ejection is a manual player command only; only the pods are ejected automatically (containment_collapse).",
+      "nacelle_loss_at_warp": "Manual: the warp field needs both nacelles (nacelle rows of the ledger, D-WARP). Sim: warp drops to sublight at once when either nacelle is lost or gets less than half its power; no graded loss of speed.",
+      "shield_warp_coupling": "Manual: shields at maximum output cost 32 percent of the warp force-coupling energy transfer unless software compensates (D-SHLD-020). Sim: the 32 percent scales with the shield output level and raises nacelle demand; at Red Alert it is nearly the full loss and no compensation is modelled.",
+      "main_impulse_after_ejection": "Manual: the impulse system keeps ship power available when the core is down (D-SAFE-002); impulse and warp share the main deuterium tank (D-FUEL-007). Sim: the main impulse engines stay online at warp and after core ejection as a game rule.",
+      "fuel_burn": "Manual: a full antimatter load lasts about 3 years (D-FUEL-004), a full deuterium load about 3 years (D-FUEL-009), 7 years at Warp 6 (D-DESIGN-010). Sim: burn follows the delivered power of core and main impulse against nominal_mw (estimate), not the warp factor; nominal_mw is tuned to the 3-year figure.",
+      "core_rated_vs_separated_flight": "Manual: in Separated Flight (emergency) the core is held at least 90 percent (D-MODE-009). Sim: the core has a game rated output of 4,000 MW out of 5,000 (D-CORE-004) and Separated Flight is not modelled.",
+      "backup_reactor_naming": "Manual: backup reactors at hot standby in Yellow and Red Alert (D-MODE-003, D-MODE-008) are the spare reaction chamber modules and auxiliary fusion units (D-IMP-009, D-IMP-010). Sim: the two saucer impulse groups stand in for the backup reactors (one at Yellow, both at Red).",
+      "per_engine_impulse_output": "Manual: 4 main impulse engines and 4 saucer engines in 2 groups of 2, 3 reaction chambers each, 10^8 to 10^11 MW per chamber (D-IMP-009, D-IMP-003, D-IMP-004). Sim: output is game-sized (estimate): 1,500 MW for the main engines (375 MW per engine) and 500 MW per saucer group (250 MW per engine); the engine count is data only."
+    }
+  }
 }

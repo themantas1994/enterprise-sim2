@@ -69,6 +69,8 @@ func test_cutting_trunk_and_cross_link_leaves_the_saucer_on_its_own_sources() ->
 	var c: Dictionary = _rt.snapshot()["components"]
 	# the saucer submaster has no path to the core and no battery backs it (D-EPS-001): it is dark until its own sources come up
 	assert_str(c["shield_grid"]["state"]).is_not_equal("ok")
+	assert_float(c["life_support"]["power"]).is_equal_approx(0.0, 0.001)  # the saucer submaster is dark before its own sources come up
+	assert_str(c["life_support"]["state"]).is_not_equal("ok")
 	var shield_before: float = c["shield_grid"]["power"]
 	# the auxiliary fusion generators come up first and carry the essential load, then the saucer reactors join
 	_rt.send({"type": "set_output", "target": "aux_fusion_1", "value": 200})

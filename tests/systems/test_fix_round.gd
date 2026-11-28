@@ -163,8 +163,10 @@ func test_ladder_level_two_caps_impulse_to_a_safe_speed() -> void:
 	H.run(_rt, 5)
 	var s := _rt.snapshot()
 	assert_int(s["ship"]["sif_idf"]["ladder"]).is_equal(2)
-	assert_float(s["ship"]["sif_idf"]["impulse_cap"]).is_equal_approx(0.2, 0.0001)
-	assert_float(s["ship"]["propulsion"]["impulse"]).is_less(0.21)
+	assert_float(s["ship"]["sif_idf"]["speed_limit"]).is_equal_approx(0.2, 0.0001)
+	assert_float(s["ship"]["propulsion"]["impulse"]).is_greater(0.5)  # it decelerates at the normal rate, it is not clamped at once (D-SIF-017)
+	H.run(_rt, 40)
+	assert_float(_rt.snapshot()["ship"]["propulsion"]["impulse"]).is_less(0.21)
 	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.5})).is_false()
 	assert_bool(H.accepted(_rt, {"type": "set_impulse", "value": 0.1})).is_true()
 

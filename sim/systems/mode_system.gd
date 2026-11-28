@@ -19,6 +19,9 @@ const MODE_OF := {"green": "cruise", "yellow": "yellow_alert", "red": "red_alert
 var alert: String = "green"
 var mode: String = "cruise"
 var _applied: String = ""
+## True while the core setpoint follows the Cruise preset (see _cruise_core). A player set_output on the warp core
+## clears it until the next return to the Cruise preset (ShipRuntime.send).
+var core_follow: bool = true
 
 
 func setup(runtime: Variant) -> void:
@@ -65,6 +68,8 @@ func require_alert(level: String, why: String) -> bool:
 
 
 func update(_snap: Dictionary) -> void:
+	if mode == "cruise" and core_follow:
+		_cruise_core()
 	if mode == _applied:
 		return
 	_apply(false)
@@ -86,7 +91,8 @@ func _apply(first: bool) -> void:
 	var sp: float = rt.setpoints["warp_core"]
 	match mode:
 		"cruise":
-			rt.setpoints["warp_core"] = float(rt.tune("modes", "core_frac_cruise")) * max_core
+			core_follow = true
+			_cruise_core()
 			rt.setpoints["impulse_main"] = float(rt.tune("modes", "impulse_cruise_mw"))
 		"yellow_alert":
 			rt.setpoints["warp_core"] = maxf(sp, float(rt.tune("modes", "core_frac_yellow")) * max_core)
@@ -106,6 +112,17 @@ func _apply(first: bool) -> void:
 			elif ReactorFsm.SHUTDOWN_ALLOWED.has(st):
 				rt.cmd({"type": "reactor_shutdown", "target": "warp_core"})
 				rt.event("core_cold_shutdown", {"reason": "reduced power, not at warp (D-MODE-011)"})
+
+
+## The Cruise preset of the core (15.4: in Cruise the warp core supplies propulsion and power; Warp 6 is the normal
+## cruising speed, D-DESIGN-001). Below warp the core keeps its small share and the main impulse engines carry the rest;
+## while at warp or with a warp factor set the preset is sized for Warp 6 (core_frac_warp), so default settings hold
+## Warp 6 and a mode change at warp never drops it. Applied every tick while the preset is followed.
+func _cruise_core() -> void:
+	var max_core := float(rt.def("warp_core")["max_output"])
+	var at_warp: bool = rt.propulsion.warp > 0.0 or rt.propulsion.warp_target > 0.0
+	var key := "core_frac_warp" if at_warp else "core_frac_cruise"
+	rt.setpoints["warp_core"] = float(rt.tune("modes", key)) * max_core
 
 
 ## True when no other producer can carry ship power: the core is the last power source.
