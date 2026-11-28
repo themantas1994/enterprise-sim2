@@ -10,8 +10,8 @@ Manual* (Sternbach and Okuda, 1991), the project's single source of truth.
 
 ## Status
 
-The 1701-D is playable (8 panels, 3 scenarios). Next: remove the dropped 1701-A/-E work and audit every
-value against the manual (Phase 5). See the plan.
+The 1701-D is playable (8 panels, 3 scenarios). The ship data is being audited against the manual (Phase 5);
+the remaining systems and panels follow in Phase 6. See the plan.
 
 ## Documents
 
