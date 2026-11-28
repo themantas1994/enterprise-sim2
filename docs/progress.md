@@ -303,3 +303,42 @@ screenshot exists for either ship, so nothing about them is verified.
 ### Plan check
 
 Orson sonnet/high confirmed at session start. The two Iris workers ran at sonnet/medium, matching the agent plan table. Mismatches: (1) the workers ran as `general-purpose` as planned for Iris; no `implementer` or `reviewer` types were used; (2) Kit, Lyra, Mae, Greta and Nell were planned for Tracks A and E and not spawned (stop rule); (3) the Android emulator and all build steps are not applicable.
+
+## Phase 5: scope change to 1701-D only and manual audit (2026-11-28)
+
+Goal (PLAN.md section 8, milestone 5): drop the NCC-1701-A and NCC-1701-E tracks and check every `D-*` ledger row
+against the TNG Technical Manual (Sternbach and Okuda, 1991), the single source of truth. The manual wins over
+dialogue and earlier ledger rows. Corrected values go into `ships/1701d.json` and `sim/systems/`.
+
+Orson's session check at start: `get_session` reported model claude-sonnet-5-5, effort high. The working branch was
+at the Phase 1 commit (33 commits behind, no unique work) and was fast-forwarded to `main` (9748b64) before any work.
+
+### Acceptance criteria
+
+1. No 1701-A or 1701-E file or reference is left. This progress file (old entries are history) and docs/PLAN.md
+   (states the dropped scope) are excluded; the command must print no file name:
+   `grep -rliE "1701-?a\b|1701-?e\b|themes/(tmp|fc)|tmp_kit|\| A-[A-Z]+-[0-9]{3}|Sovereign|Constitution|Haynes|Mr\. Scott" . --exclude-dir=.git --exclude=progress.md --exclude=PLAN.md`
+2. Every `D-*` row in docs/sources.md cites the manual section and book page, or says "not in the manual" with
+   the reason. Numbers taken from the manual were checked on the page image. No `A-*` row and no A/E source rule
+   is left; the rules section follows PLAN.md section 1 (manual first).
+3. Rows that were `estimate` or `unverified` and that the manual covers (D-EPS-001..003, D-CORE-004, D-IMP-004,
+   D-IMP-009, D-IMP-010, D-COOL-003, D-DMG-001) hold the manual value, or state "not in the manual".
+4. Every changed value is carried into `ships/1701d.json` and `sim/systems/` (tests first where behaviour
+   changes); every ship value cites a ledger id that exists.
+5. All of these exit 0, each run with `set -o pipefail`, its own log and its real exit status:
+   - `scripts/install_godot.sh` and `scripts/install_gdunit4.sh`
+   - `scripts/check_sim_purity.sh`
+   - `python3 -I scripts/check_ship_sources.py`
+   - `scripts/selftest_checks.sh`
+   - `scripts/run_tests.sh` (0 errors, 0 failures, 0 orphans)
+   - `scripts/export.sh` for linux, windows and android (debug)
+6. Reviews: Greta (G1, `git diff main...HEAD`) and Nell (S1, ships/1701d.json and sim/systems against the updated
+   ledger, manual pages spot-checked); confirmed findings fixed and step 5 re-run.
+7. PR against `main` opened and CI green. README status line has no A/E mention.
+
+### Spawn log
+
+One line per spawned worker: agent, task, model, effort, result.
+
+| agent | task | model | effort | result |
+|---|---|---|---|---|
