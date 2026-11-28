@@ -26,8 +26,10 @@
     },
     {
       "id": "impulse_main",
-      "name": "Main impulse reactor",
+      "name": "Main impulse engines",
       "reactor": true,
+      "engines": {"value": 4, "source": "D-IMP-009"},
+      "chambers_per_engine": {"value": 3, "source": "D-IMP-009"},
       "state": "online",
       "deck": {"value": 23, "source": "D-IMP-001"},
       "max_output": {"value": 1500.0, "source": "estimate", "reason": "game-sized; canon impulse figures do not fit the grid (D-IMP-009)"},
@@ -40,8 +42,10 @@
     },
     {
       "id": "impulse_saucer_1",
-      "name": "Saucer impulse reactor 1",
+      "name": "Saucer impulse engines, group 1",
       "reactor": true,
+      "engines": {"value": 2, "source": "D-IMP-009"},
+      "chambers_per_engine": {"value": 3, "source": "D-IMP-009"},
       "state": "cold",
       "deck": {"value": 10, "source": "D-IMP-002"},
       "max_output": {"value": 500.0, "source": "estimate", "reason": "game-sized (D-IMP-009)"},
@@ -54,8 +58,10 @@
     },
     {
       "id": "impulse_saucer_2",
-      "name": "Saucer impulse reactor 2",
+      "name": "Saucer impulse engines, group 2",
       "reactor": true,
+      "engines": {"value": 2, "source": "D-IMP-009"},
+      "chambers_per_engine": {"value": 3, "source": "D-IMP-009"},
       "state": "cold",
       "deck": {"value": 10, "source": "D-IMP-002"},
       "max_output": {"value": 500.0, "source": "estimate", "reason": "game-sized (D-IMP-009)"},
@@ -69,29 +75,21 @@
     {
       "id": "aux_fusion_1",
       "name": "Auxiliary fusion generator 1",
-      "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
-      "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
+      "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized; the manual gives no count of auxiliary fusion generators, so count and output are game values (D-IMP-010)"},
+      "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized; the manual gives no count of auxiliary fusion generators, so count and output are game values (D-IMP-010)"},
       "output": {"value": 0.0, "source": "estimate", "reason": "off-line at cruise until needed, game setting (D-IMP-010)"},
       "heat_threshold": {"value": 150.0, "source": "estimate", "reason": "game temperature scale (D-IMP-010)"}
     },
     {
       "id": "aux_fusion_2",
       "name": "Auxiliary fusion generator 2",
-      "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
-      "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized (D-IMP-010)"},
+      "max_output": {"value": 200.0, "source": "estimate", "reason": "game-sized; the manual gives no count of auxiliary fusion generators, so count and output are game values (D-IMP-010)"},
+      "rated": {"value": 150.0, "source": "estimate", "reason": "game-sized; the manual gives no count of auxiliary fusion generators, so count and output are game values (D-IMP-010)"},
       "output": {"value": 0.0, "source": "estimate", "reason": "off-line at cruise until needed, game setting (D-IMP-010)"},
       "heat_threshold": {"value": 150.0, "source": "estimate", "reason": "game temperature scale (D-IMP-010)"}
     }
   ],
   "stores": [
-    {
-      "id": "battery_emergency",
-      "name": "Emergency battery",
-      "capacity": {"value": 30000.0, "source": "estimate", "reason": "MW x s; 100 s at the maximum discharge (D-EPS-001)"},
-      "charge": {"value": 30000.0, "source": "estimate", "reason": "starts full (D-EPS-001)"},
-      "max_discharge": {"value": 300.0, "source": "estimate", "reason": "game-sized (D-EPS-001)"},
-      "max_charge": {"value": 30.0, "source": "estimate", "reason": "slow trickle charge, game-sized (D-EPS-001)"}
-    },
     {
       "id": "coolant_core",
       "name": "Core coolant loop",
@@ -190,12 +188,6 @@
       "from": "aux_fusion_2",
       "to": "eps_node_saucer",
       "capacity": {"value": 200.0, "source": "estimate", "reason": "game-sized grid so the cruise and alert loads fit; no verified figure (D-EPS-002)"}
-    },
-    {
-      "id": "feed_battery",
-      "from": "battery_emergency",
-      "to": "eps_node_saucer",
-      "capacity": {"value": 300.0, "source": "estimate", "reason": "game-sized grid so the cruise and alert loads fit; no verified figure (D-EPS-002)"}
     },
     {
       "id": "ld_life_support",
@@ -955,7 +947,6 @@
         "impulse_saucer_2",
         "aux_fusion_1",
         "aux_fusion_2",
-        "battery_emergency",
         "eps_trunk_a",
         "eps_trunk_b",
         "eps_cross_link",

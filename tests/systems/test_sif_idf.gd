@@ -19,6 +19,7 @@ func _kill(id: String) -> void:
 func _go_to_warp(w: float) -> void:
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "core_set_mode", "value": "warp"})).is_true()
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": w})).is_true()
 	H.run(_rt, 200)
 	assert_float(_rt.propulsion.warp).is_equal_approx(w, 0.001)

@@ -62,6 +62,7 @@ func test_reduced_power_keeps_the_core_when_at_warp() -> void:
 	_rt = H.make()
 	H.run(_rt, 3)
 	_rt.send({"type": "core_set_mode", "value": "warp"})
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	_rt.send({"type": "set_warp", "value": 5.0})
 	H.run(_rt, 150)
 	_rt.send({"type": "set_mode", "value": "reduced_power"})

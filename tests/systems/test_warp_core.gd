@@ -51,16 +51,14 @@ func test_cold_start_sequence_follows_the_manual() -> void:
 
 func test_start_up_stalls_without_power_and_resumes() -> void:
 	_rt = _cold()
-	_rt.send_debug({"type": "damage", "target": "impulse_main", "amount": 100})  # no ship power at all
-	_rt.send_debug({"type": "damage", "target": "battery_emergency", "amount": 100})
+	_rt.send({"type": "set_output", "target": "impulse_main", "value": 0})  # no ship power at all
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "reactor_start", "target": "warp_core"})).is_true()
 	H.run(_rt, 30)
 	assert_str(_warp()["stage"]).is_equal("heating")
 	assert_str(_warp()["stalled"]).is_not_empty()
 	assert_float(_warp()["chamber_k"]).is_less(1000.0)
-	_rt.send_debug({"type": "repair", "target": "impulse_main"})
-	_rt.send_debug({"type": "repair", "target": "battery_emergency"})
+	_rt.send({"type": "set_output", "target": "impulse_main", "value": 1200})  # ship power returns
 	H.run(_rt, 30)
 	assert_str(_warp()["stalled"]).is_empty()
 	assert_float(_warp()["chamber_k"]).is_greater(10000.0)
@@ -175,6 +173,7 @@ func test_warp_needs_warp_mode_core_and_nacelles() -> void:
 	H.run(_rt, 5)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 5.0})).is_false()  # power mode
 	assert_bool(H.accepted(_rt, {"type": "core_set_mode", "value": "warp"})).is_true()
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 9.9})).is_false()  # above 9.6 (D-DESIGN-003)
 	assert_bool(H.accepted(_rt, {"type": "set_warp", "value": 6.0})).is_true()
 	H.run(_rt, 200)

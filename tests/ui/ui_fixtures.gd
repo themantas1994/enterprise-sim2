@@ -6,7 +6,7 @@ const MAP := {
 	"msd": {"title": "Master Systems Display", "components": ["warp_core", "coolant_core", "antimatter_pod_01", "antimatter_pod_02", "antimatter_pod_03", "antimatter_pod_04", "eps_trunk_a", "shield_grid", "impulse_main"]},
 	"warp_core": {"title": "Warp Core", "components": ["warp_core", "warp_injector_matter_1", "warp_injector_matter_2", "warp_injector_antimatter_1", "warp_constrictor_upper", "warp_dilithium_frame", "warp_nacelle_port", "coolant_core"]},
 	"fuel": {"title": "Fuel", "components": ["antimatter_pod_01", "antimatter_pod_02", "antimatter_pod_03", "antimatter_pod_04", "deuterium_tank_main", "antimatter_generator"]},
-	"eps": {"title": "Power Distribution", "components": ["warp_core", "impulse_main", "eps_trunk_a", "eps_trunk_b", "eps_cross_link", "battery_emergency", "shield_grid", "life_support"]},
+	"eps": {"title": "Power Distribution", "components": ["warp_core", "impulse_main", "eps_trunk_a", "eps_trunk_b", "eps_cross_link", "shield_grid", "life_support"]},
 	"shields": {"title": "Shields", "components": ["shield_grid", "shield_gen_p1", "shield_gen_p2", "shield_backup_primary"]},
 	"impulse": {"title": "Impulse", "components": ["impulse_main", "aux_fusion_1", "impulse_drive", "deuterium_tank_main"]},
 	"sif_idf": {"title": "SIF and IDF", "components": ["sif_grid", "sif_gen_p1", "idf_grid", "idf_gen_p1"]},
@@ -27,7 +27,7 @@ static func components() -> Dictionary:
 	c["warp_core"] = comp("producer", "online", {"countdown": 0, "load": 0.8})
 	c["impulse_main"] = comp("producer", "ok")
 	c["aux_fusion_1"] = comp("producer", "ok")
-	for id in ["coolant_core", "deuterium_tank_main", "antimatter_generator", "battery_emergency"]:
+	for id in ["coolant_core", "deuterium_tank_main", "antimatter_generator"]:
 		c[id] = comp("store", "ok", {"charge": 500.0})
 	for i in range(1, 5):
 		c["antimatter_pod_%02d" % i] = comp("store", "ok", {"charge": 90.0 + i})

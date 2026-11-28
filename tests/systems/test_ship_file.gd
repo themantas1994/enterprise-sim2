@@ -21,7 +21,7 @@ func _expected_ids() -> Array:
 	ids.append_array(["warp_constrictor_upper", "warp_constrictor_lower", "warp_dilithium_frame", "warp_nacelle_port", "warp_nacelle_stbd"])
 	for i in range(1, 31):
 		ids.append("antimatter_pod_%02d" % i)
-	ids.append_array(["impulse_main", "impulse_saucer_1", "impulse_saucer_2", "aux_fusion_1", "aux_fusion_2", "battery_emergency", "impulse_drive"])
+	ids.append_array(["impulse_main", "impulse_saucer_1", "impulse_saucer_2", "aux_fusion_1", "aux_fusion_2", "impulse_drive"])
 	ids.append_array(["eps_trunk_a", "eps_trunk_b", "eps_cross_link", "eps_sub_saucer", "eps_sub_engineering", "eps_sub_nacelle", "eps_sub_weapons"])
 	ids.append_array(["shield_grid", "shield_backup_primary", "shield_backup_secondary", "sif_grid", "sif_backup_primary", "sif_backup_secondary"])
 	ids.append_array(["idf_grid", "idf_backup_primary", "idf_backup_secondary"])
@@ -70,6 +70,23 @@ func test_counts_follow_the_ledger() -> void:
 	assert_int(n["warp_injector_matter_"]).is_equal(6)  # D-WARP-001
 	assert_int(n["warp_injector_antimatter_"]).is_equal(3)  # D-WARP-004
 	assert_int(n["dc_team_"]).is_equal(4)  # D-DMG-001
+
+
+func test_impulse_engine_counts_and_eps_sources_follow_the_manual() -> void:
+	_rt = H.make()
+	var comps: Dictionary = _rt.snapshot()["components"]
+	var by_id := {}
+	for p: Dictionary in _rt.raw["producers"]:
+		by_id[p["id"]] = p
+	assert_int(int(by_id["impulse_main"]["engines"]["value"])).is_equal(4)  # D-IMP-009
+	assert_int(int(by_id["impulse_saucer_1"]["engines"]["value"]) + int(by_id["impulse_saucer_2"]["engines"]["value"])).is_equal(4)  # D-IMP-009: 2 groups of 2
+	for id: String in ["impulse_main", "impulse_saucer_1", "impulse_saucer_2"]:
+		assert_int(int(by_id[id]["chambers_per_engine"]["value"])).is_equal(3)  # D-IMP-009
+	# D-EPS-001: no emergency battery feeds the EPS grid
+	assert_bool(comps.has("battery_emergency")).is_false()
+	assert_bool(comps.has("feed_battery")).is_false()
+	for s: Dictionary in _rt.raw.get("stores", []):
+		assert_bool(str(s["id"]).contains("battery")).is_false()
 
 
 func test_panel_map_ids_all_exist_and_follow_the_adr_order() -> void:

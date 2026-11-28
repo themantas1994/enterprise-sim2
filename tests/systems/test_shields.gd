@@ -120,6 +120,7 @@ func test_shield_power_cuts_warp_coupling() -> void:
 	_rt = H.make()
 	H.run(_rt, 3)
 	_rt.send({"type": "core_set_mode", "value": "warp"})
+	_rt.send({"type": "set_output", "target": "warp_core", "value": 3000})  # the player raises the core for warp; the grid has no emergency battery (D-EPS-001)
 	_rt.send({"type": "set_warp", "value": 6.0})
 	H.run(_rt, 150)
 	var nac_cruise: float = H.comp(_rt, "warp_nacelle_port")["demand"]

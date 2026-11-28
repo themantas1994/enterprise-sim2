@@ -15,8 +15,7 @@ func after_test() -> void:
 func test_shortage_sheds_lowest_priority_first() -> void:
 	_rt = H.make()
 	H.run(_rt, 20)
-	# one small source left: core 200 MW, main impulse off, battery destroyed
-	_rt.send_debug({"type": "damage", "target": "battery_emergency", "amount": 100})
+	# one small source left: core 200 MW, main impulse off
 	_rt.send({"type": "set_output", "target": "impulse_main", "value": 0})
 	_rt.send({"type": "set_output", "target": "warp_core", "value": 200})
 	H.run(_rt, 10)
@@ -68,14 +67,16 @@ func test_cutting_trunk_and_cross_link_leaves_the_saucer_on_its_own_sources() ->
 	_rt.send({"type": "cut_conduit", "target": "eps_cross_link"})
 	H.run(_rt, 10)
 	var c: Dictionary = _rt.snapshot()["components"]
-	# the saucer submaster has no path to the core; only the emergency battery (300 MW) is left there
-	assert_float(c["eps_sub_saucer"]["power"]).is_less(301.0)
-	assert_str(c["life_support"]["state"]).is_equal("ok")  # essential load still served
+	# the saucer submaster has no path to the core and no battery backs it (D-EPS-001): it is dark until its own sources come up
 	assert_str(c["shield_grid"]["state"]).is_not_equal("ok")
 	var shield_before: float = c["shield_grid"]["power"]
-	# the saucer reactors and the auxiliary generators power the saucer submaster alone
+	# the auxiliary fusion generators come up first and carry the essential load, then the saucer reactors join
 	_rt.send({"type": "set_output", "target": "aux_fusion_1", "value": 200})
 	_rt.send({"type": "set_output", "target": "aux_fusion_2", "value": 200})
+	H.run(_rt, 10)
+	c = _rt.snapshot()["components"]
+	assert_str(c["life_support"]["state"]).is_equal("ok")  # essential load served by the auxiliary generators
+	assert_float(c["feed_aux_fusion_1"]["power"]).is_greater(0.0)
 	_rt.send({"type": "reactor_online", "target": "impulse_saucer_1"})
 	_rt.send({"type": "reactor_online", "target": "impulse_saucer_2"})
 	H.run(_rt, 10)
